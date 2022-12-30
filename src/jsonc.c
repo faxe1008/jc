@@ -394,7 +394,7 @@ static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t*
         if ((long long)value->number == value->number) {
             builder_append(builder, "%ld", (long long)value->number);
         } else {
-            builder_append(builder, "%f", value->number);
+            builder_append(builder, "%g", value->number);
         }
         break;
     case OBJECT:
@@ -658,30 +658,67 @@ JsonValue_t* parse_number(JsonParser_t* parser)
     StringBuilder_t builder = { 0 };
     builder_resize(&builder, 12);
 
-    if (parser_peek(parser, 0) == '-')
-        builder_append_ch(&builder, parser_consume(parser));
+    /*
+        number = [ minus ] int [ frac ] [ exp ]
+        exp = e [ minus / plus ] 1*DIGIT
+        frac = decimal-point 1*DIGIT
+        int = zero | ( digit1-9 *DIGIT )
+        minus = %x2D               ; -
+        plus = %x2B                ; +
+        zero = %x30                ; 0
+        decimal-point = %x2E       ; .
+        digit1-9 = %x31-39         ; 1-9
+        e = %x65 | %x45            ; e E
+    */
 
-    if (!isdigit(parser_peek(parser, 0)))
-        goto EXIT_ERROR;
-
-    while (isdigit(parser_peek(parser, 0))) {
-        builder_append_ch(&builder, parser_consume(parser));
-    }
-
+    // [ minus ]
     char ch = parser_peek(parser, 0);
-    if (ch != '.')
-        goto EXIT_OK;
-
-    builder_append_ch(&builder, parser_consume(parser));
-    while (isdigit(parser_peek(parser, 0))) {
+    if (ch == '-')
         builder_append_ch(&builder, parser_consume(parser));
+
+    // int
+    ch = parser_peek(parser, 0);
+    if (ch == '0') {
+        builder_append_ch(&builder, parser_consume(parser));
+    } else if (ch >= '1' && ch <= '9') {
+        builder_append_ch(&builder, parser_consume(parser));
+        while (isdigit(parser_peek(parser, 0)))
+            builder_append_ch(&builder, parser_consume(parser));
+    } else {
+        goto EXIT_ERROR;
     }
 
-    ignore_while(parser, is_space);
-
+    // [frac] [exp]
     ch = parser_peek(parser, 0);
-    if (ch != ',' && ch != '}' && ch != ']')
-        goto EXIT_ERROR;
+    if (ch == '.') {
+        // [ frac ]
+        builder_append_ch(&builder, parser_consume(parser));
+        ch = parser_peek(parser, 0);
+        if (!isdigit(ch))
+            goto EXIT_ERROR;
+        builder_append_ch(&builder, parser_consume(parser));
+        while (isdigit(parser_peek(parser, 0)))
+            builder_append_ch(&builder, parser_consume(parser));
+        ch = parser_peek(parser, 0);
+    }
+
+    if (ch == 'e' || ch == 'E') {
+        // [ exp ]
+        builder_append_ch(&builder, parser_consume(parser));
+        ch = parser_peek(parser, 0);
+        if (ch == '+' || ch == '-') {
+            builder_append_ch(&builder, parser_consume(parser));
+            ch = parser_peek(parser, 0);
+            if (ch < '1' || ch > '9')
+                goto EXIT_ERROR;
+        } else if (ch >= '1' && ch <= '9') {
+            builder_append_ch(&builder, parser_consume(parser));
+        } else {
+            goto EXIT_ERROR;
+        }
+        while (isdigit(parser_peek(parser, 0)))
+            builder_append_ch(&builder, parser_consume(parser));
+    }
 
 EXIT_OK:
     double value = atof(builder.buffer);
