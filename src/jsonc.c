@@ -372,7 +372,7 @@ static void builder_append_escaped_str(StringBuilder_t* builder, const char* str
             builder_append(builder, "\\\\");
             break;
         default:
-            builder_append(builder, "%c", ch);
+            builder_append_ch(builder, ch);
         }
     }
 }
@@ -385,9 +385,9 @@ static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t*
         return;
     switch (value->ty) {
     case STRING:
-        builder_append(builder, "\"");
+        builder_append_ch(builder, '"');
         builder_append_escaped_str(builder, value->string);
-        builder_append(builder, "\"");
+        builder_append_ch(builder, '"');
         break;
     case NUMBER:
         // FIXME: This is hackish
@@ -415,36 +415,37 @@ static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t*
 void builder_serialize_obj(StringBuilder_t* builder, const JsonObject_t* obj)
 {
     JsonObjectEntry_t* current = obj->entry;
-    builder_append(builder, "{");
+    builder_append_ch(builder, '{');
     while (current) {
-        builder_append(builder, "\"");
+        builder_append_ch(builder, '"');
         builder_append_escaped_str(builder, current->key);
-        builder_append(builder, "\":");
+        builder_append_ch(builder, '"');
+        builder_append_ch(builder, ':');
         if (current->value) {
             builder_serialize_value(builder, current->value);
         } else {
             builder_append(builder, "null");
         }
         if (current->next)
-            builder_append(builder, ",");
+            builder_append_ch(builder, ',');
         current = current->next;
     }
-    builder_append(builder, "}");
+    builder_append_ch(builder, '}');
 }
 
 void builder_serialize_arr(StringBuilder_t* builder, const JsonArray_t* obj)
 {
     JsonArrayEntry_t* current = obj->entry;
-    builder_append(builder, "[");
+    builder_append_ch(builder, '[');
     while (current) {
         if (current->value) {
             builder_serialize_value(builder, current->value);
         }
         if (current->next)
-            builder_append(builder, ",");
+            builder_append_ch(builder, ',');
         current = current->next;
     }
-    builder_append(builder, "]");
+    builder_append_ch(builder, ']');
 }
 
 char* jsonc_doc_to_string(const JsonDocument_t* doc)
