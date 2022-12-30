@@ -43,13 +43,11 @@ TEST_CASE(serialize_obj, {
 })
 
 TEST_CASE(serialize_arr, {
-    JsonArray_t* arr = jsonc_new_array();
+    JsonArray_t* arr = jsonc_new_arr();
 
-    JsonValue_t* v1 = jsonc_new_value(STRING, "Item1");
+    jsonc_arr_insert(arr, STRING, "Item1");
     JsonValue_t* v2 = jsonc_new_value_bool(true);
-
-    jsonc_array_insert(arr, v1);
-    jsonc_array_insert(arr, v2);
+    jsonc_arr_insert_value(arr, v2);
 
     JsonDocument_t* doc = jsonc_new_doc();
     jsonc_doc_set_array(doc, arr);
@@ -70,9 +68,9 @@ TEST_CASE(serialize_complex, {
     jsonc_obj_set(obj, "NULL", jsonc_new_value(NULL_LITERAL, NULL));
 
     double num = 2.0;
-    JsonArray_t* arr = jsonc_new_array();
-    jsonc_array_insert(arr, jsonc_new_value(STRING, "Item1"));
-    jsonc_array_insert(arr, jsonc_new_value(NUMBER, &num));
+    JsonArray_t* arr = jsonc_new_arr();
+    jsonc_arr_insert_value(arr, jsonc_new_value(STRING, "Item1"));
+    jsonc_arr_insert_value(arr, jsonc_new_value(NUMBER, &num));
     jsonc_obj_set(obj, "array", jsonc_new_value(ARRAY, arr));
 
     JsonObject_t* sub = jsonc_new_obj();

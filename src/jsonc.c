@@ -357,7 +357,7 @@ bool builder_append(StringBuilder_t* builder, const char* format, ...)
         return false;
     va_list args;
     va_start(args, format);
-    int len = vsnprintf(NULL, 0, format, args);
+    size_t len = (size_t)vsnprintf(NULL, 0, format, args);
     va_end(args);
     va_start(args, format);
     if (builder->pos + len >= builder->capacity) {
