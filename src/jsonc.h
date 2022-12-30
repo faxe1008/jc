@@ -81,5 +81,6 @@ JsonObject_t* jsonc_obj_get_object(const JsonObject_t* obj, const char* key);
 JsonArray_t* jsonc_obj_get_array(const JsonObject_t* obj, const char* key);
 
 char* jsonc_doc_to_string(const JsonDocument_t* doc);
+JsonDocument_t* jsonc_doc_from_string(const char* str);
 
 #endif
