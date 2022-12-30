@@ -410,12 +410,7 @@ static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t*
         builder_append_ch(builder, '"');
         break;
     case NUMBER:
-        // FIXME: This is hackish
-        if ((long long)value->number == value->number) {
-            builder_append(builder, "%ld", (long long)value->number);
-        } else {
-            builder_append(builder, "%g", value->number);
-        }
+        builder_append(builder, "%g", value->number);
         break;
     case OBJECT:
         builder_serialize_obj(builder, value->object);
