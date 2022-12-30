@@ -58,6 +58,7 @@ JsonDocument_t* jsonc_new_doc();
 JsonObject_t* jsonc_new_obj();
 JsonArray_t* jsonc_new_array();
 JsonValue_t* jsonc_new_value(JsonValueType_t ty, void* data);
+JsonValue_t* jsonc_new_value_bool(bool);
 
 void jsonc_free_doc(JsonDocument_t* doc);
 void jsonc_free_obj(JsonObject_t* obj);

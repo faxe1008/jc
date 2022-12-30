@@ -53,6 +53,16 @@ JsonValue_t* jsonc_new_value(JsonValueType_t ty, void* data)
     return value;
 }
 
+JsonValue_t* jsonc_new_value_bool(bool b)
+{
+    JsonValue_t* value = (JsonValue_t*)calloc(1, sizeof(JsonValue_t));
+    if (!value)
+        return NULL;
+    value->ty = BOOLEAN;
+    value->boolean = b;
+    return value;
+}
+
 void jsonc_free_doc(JsonDocument_t* doc)
 {
     if (!doc)
@@ -636,14 +646,14 @@ JsonValue_t* parse_true(JsonParser_t* parser)
 {
     if (!parser_consume_specific(parser, "true"))
         return NULL;
-    return jsonc_new_value(BOOLEAN, true);
+    return jsonc_new_value_bool(true);
 }
 
 JsonValue_t* parse_false(JsonParser_t* parser)
 {
     if (!parser_consume_specific(parser, "false"))
         return NULL;
-    return jsonc_new_value(BOOLEAN, false);
+    return jsonc_new_value_bool(false);
 }
 
 JsonValue_t* parse_null(JsonParser_t* parser)
@@ -659,6 +669,7 @@ JsonValue_t* parse_number(JsonParser_t* parser)
     builder_resize(&builder, 12);
 
     /*
+        https://www.rfc-editor.org/rfc/rfc4627
         number = [ minus ] int [ frac ] [ exp ]
         exp = e [ minus / plus ] 1*DIGIT
         frac = decimal-point 1*DIGIT
@@ -720,7 +731,6 @@ JsonValue_t* parse_number(JsonParser_t* parser)
             builder_append_ch(&builder, parser_consume(parser));
     }
 
-EXIT_OK:
     double value = atof(builder.buffer);
     free(builder.buffer);
     return jsonc_new_value(NUMBER, &value);
