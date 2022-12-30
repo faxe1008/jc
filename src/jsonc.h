@@ -56,13 +56,13 @@ typedef struct {
 
 JsonDocument_t* jsonc_new_doc();
 JsonObject_t* jsonc_new_obj();
-JsonArray_t* jsonc_new_array();
+JsonArray_t* jsonc_new_arr();
 JsonValue_t* jsonc_new_value(JsonValueType_t ty, void* data);
 JsonValue_t* jsonc_new_value_bool(bool);
 
 void jsonc_free_doc(JsonDocument_t* doc);
 void jsonc_free_obj(JsonObject_t* obj);
-void jsonc_free_array(JsonArray_t* arr);
+void jsonc_free_arr(JsonArray_t* arr);
 void jsonc_free_value(JsonValue_t* value);
 void jsonc_free_array_entry(JsonArrayEntry_t* entry);
 void jsonc_free_obj_entry(JsonObjectEntry_t* entry);
@@ -70,7 +70,9 @@ void jsonc_free_obj_entry(JsonObjectEntry_t* entry);
 void jsonc_doc_set_obj(JsonDocument_t* doc, JsonObject_t* obj);
 void jsonc_doc_set_array(JsonDocument_t* doc, JsonArray_t* obj);
 
-void jsonc_array_insert(JsonArray_t* arr, JsonValue_t* value);
+void jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value);
+void jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data);
+
 void jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value);
 void jsonc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data);
 
@@ -78,8 +80,8 @@ JsonValue_t* jsonc_obj_get(const JsonObject_t* obj, const char* key);
 const char* jsonc_obj_get_string(const JsonObject_t* obj, const char* key);
 bool* jsonc_obj_get_bool(const JsonObject_t* obj, const char* key);
 double* jsonc_obj_get_number(const JsonObject_t* obj, const char* key);
-JsonObject_t* jsonc_obj_get_object(const JsonObject_t* obj, const char* key);
-JsonArray_t* jsonc_obj_get_array(const JsonObject_t* obj, const char* key);
+JsonObject_t* jsonc_obj_get_obj(const JsonObject_t* obj, const char* key);
+JsonArray_t* jsonc_obj_get_arr(const JsonObject_t* obj, const char* key);
 
 char* jsonc_doc_to_string(const JsonDocument_t* doc);
 JsonDocument_t* jsonc_doc_from_string(const char* str);

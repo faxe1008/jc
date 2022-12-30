@@ -14,7 +14,7 @@ JsonObject_t* jsonc_new_obj()
 {
     return (JsonObject_t*)calloc(1, sizeof(JsonObject_t));
 }
-JsonArray_t* jsonc_new_array()
+JsonArray_t* jsonc_new_arr()
 {
     return (JsonArray_t*)calloc(1, sizeof(JsonArray_t));
 }
@@ -70,7 +70,7 @@ void jsonc_free_doc(JsonDocument_t* doc)
     if (doc->object)
         jsonc_free_obj(doc->object);
     if (doc->array)
-        jsonc_free_array(doc->array);
+        jsonc_free_arr(doc->array);
     free(doc);
 }
 
@@ -87,7 +87,7 @@ void jsonc_free_obj(JsonObject_t* obj)
     free(obj);
 }
 
-void jsonc_free_array(JsonArray_t* arr)
+void jsonc_free_arr(JsonArray_t* arr)
 {
     if (!arr)
         return;
@@ -113,7 +113,7 @@ void jsonc_free_value(JsonValue_t* value)
         value->object = NULL;
     }
     if (value->ty == ARRAY && value->array) {
-        jsonc_free_array(value->array);
+        jsonc_free_arr(value->array);
         value->array = NULL;
     }
     free(value);
@@ -151,7 +151,7 @@ void jsonc_doc_set_obj(JsonDocument_t* doc, JsonObject_t* obj)
     if (doc->object && doc->object != obj)
         jsonc_free_obj(doc->object);
     if (doc->array)
-        jsonc_free_array(doc->array);
+        jsonc_free_arr(doc->array);
     doc->object = obj;
 }
 
@@ -162,11 +162,21 @@ void jsonc_doc_set_array(JsonDocument_t* doc, JsonArray_t* arr)
     if (doc->object)
         jsonc_free_obj(doc->object);
     if (doc->array && doc->array != arr)
-        jsonc_free_array(doc->array);
+        jsonc_free_arr(doc->array);
     doc->array = arr;
 }
 
-void jsonc_array_insert(JsonArray_t* arr, JsonValue_t* value)
+void jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data)
+{
+    if (!arr || !data)
+        return;
+    JsonValue_t* value = jsonc_new_value(ty, data);
+    if (!value)
+        return;
+    jsonc_arr_insert_value(arr, value);
+}
+
+void jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value)
 {
     if (!arr || !value)
         return;
@@ -284,7 +294,7 @@ double* jsonc_obj_get_number(const JsonObject_t* obj, const char* key)
     return &value->number;
 }
 
-JsonObject_t* jsonc_obj_get_object(const JsonObject_t* obj, const char* key)
+JsonObject_t* jsonc_obj_get_obj(const JsonObject_t* obj, const char* key)
 {
     JsonValue_t* value = jsonc_obj_get(obj, key);
     if (!value || value->ty != OBJECT)
@@ -292,7 +302,7 @@ JsonObject_t* jsonc_obj_get_object(const JsonObject_t* obj, const char* key)
     return value->object;
 }
 
-JsonArray_t* jsonc_obj_get_array(const JsonObject_t* obj, const char* key)
+JsonArray_t* jsonc_obj_get_arr(const JsonObject_t* obj, const char* key)
 {
     JsonValue_t* value = jsonc_obj_get(obj, key);
     if (!value || value->ty != ARRAY)
@@ -834,7 +844,7 @@ EXIT_ERROR:
 
 JsonArray_t* parse_arr(JsonParser_t* parser)
 {
-    JsonArray_t* arr = jsonc_new_array();
+    JsonArray_t* arr = jsonc_new_arr();
     StringBuilder_t builder = { 0 };
     builder_resize(&builder, 64);
 
@@ -849,7 +859,7 @@ JsonArray_t* parse_arr(JsonParser_t* parser)
         JsonValue_t* value = parse_value(parser);
         if (!value)
             goto EXIT_ERROR;
-        jsonc_array_insert(arr, value);
+        jsonc_arr_insert_value(arr, value);
         builder_reset(&builder);
         ignore_while(parser, is_space);
 
@@ -874,7 +884,7 @@ JsonArray_t* parse_arr(JsonParser_t* parser)
 
 EXIT_ERROR:
     free(builder.buffer);
-    jsonc_free_array(arr);
+    jsonc_free_arr(arr);
     return NULL;
 }
 
