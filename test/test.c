@@ -88,6 +88,42 @@ TEST_CASE(serialize_complex, {
     jsonc_free_doc(doc);
 })
 
+static const char* valid_docs[] = {
+    "[]",
+    "{}",
+    "[{}]",
+    "[2,2.4,true,false,null,\"hello\"]",
+    "{\"key\":\"value\"}",
+    "{\"key\":\"value\",\"boolean_true\":true,\"boolean_false\":false,\"NULL\":null,\"array\":[\"Item1\",2],\"subobject\":{\"subkey\":\"subvalue\"}}",
+    NULL
+};
+
+TEST_CASE(serde_valid, {
+    for (size_t i = 0; valid_docs[i]; i++) {
+        JsonDocument_t* doc = jsonc_doc_from_string(valid_docs[i]);
+        VERIFY(doc);
+        char* serialized = jsonc_doc_to_string(doc);
+        VERIFY(strcmp(valid_docs[i], serialized) == 0);
+        free(serialized);
+        jsonc_free_doc(doc);
+    }
+})
+
+static const char* invalid_docs[] = {
+    "[NULL]",
+    "[01]",
+    "[frue]",
+    "{\"missing_quote:\"\"}",
+    NULL
+};
+
+TEST_CASE(serde_invalid, {
+    for (size_t i = 0; invalid_docs[i]; i++) {
+        JsonDocument_t* doc = jsonc_doc_from_string(invalid_docs[i]);
+        VERIFY(!doc);
+    }
+})
+
 int main(int argc, char** argv)
 {
     REGISTER_TEST_CASE(set_and_get);
@@ -95,5 +131,7 @@ int main(int argc, char** argv)
     REGISTER_TEST_CASE(serialize_obj);
     REGISTER_TEST_CASE(serialize_arr);
     REGISTER_TEST_CASE(serialize_complex);
+    REGISTER_TEST_CASE(serde_valid);
+    REGISTER_TEST_CASE(serde_invalid);
     RUN_TEST_SUITE(argc, argv);
 }
