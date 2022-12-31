@@ -4,13 +4,13 @@
 TEST_CASE(set_and_get, {
     JsonObject_t* obj = jsonc_new_obj();
 
-    JsonValue_t* value = jsonc_new_value(STRING, "General Kenobi");
-    jsonc_obj_set(obj, "Hello There", value);
+    JsonValue_t* value = jsonc_new_value(STRING, "VALUE");
+    jsonc_obj_set(obj, "KEY", value);
 
-    VERIFY(jsonc_obj_get(obj, "Hello There") == value);
+    VERIFY(jsonc_obj_get(obj, "KEY") == value);
 
-    const char* str_val = jsonc_obj_get_string(obj, "Hello There");
-    VERIFY(strcmp(str_val, "General Kenobi") == 0);
+    const char* str_val = jsonc_obj_get_string(obj, "KEY");
+    VERIFY(strcmp(str_val, "VALUE") == 0);
 
     jsonc_free_obj(obj);
 });
@@ -18,12 +18,12 @@ TEST_CASE(set_and_get, {
 TEST_CASE(replace_value, {
     JsonObject_t* obj = jsonc_new_obj();
 
-    JsonValue_t* value = jsonc_new_value(STRING, "General Kenobi");
-    jsonc_obj_set(obj, "Hello There", value);
+    JsonValue_t* value = jsonc_new_value(STRING, "VALUE");
+    jsonc_obj_set(obj, "KEY", value);
 
     JsonValue_t* new_value = jsonc_new_value(BOOLEAN, false);
-    jsonc_obj_set(obj, "Hello There", new_value);
-    VERIFY(jsonc_obj_get(obj, "Hello There") == new_value);
+    jsonc_obj_set(obj, "KEY", new_value);
+    VERIFY(jsonc_obj_get(obj, "KEY") == new_value);
 
     jsonc_free_obj(obj);
 })
@@ -35,7 +35,7 @@ TEST_CASE(serialize_obj, {
     JsonDocument_t* doc = jsonc_new_doc();
     jsonc_doc_set_obj(doc, obj);
 
-    char* serialized = jsonc_doc_to_string(doc);
+    char* serialized = jsonc_doc_to_string(doc, 0);
 
     VERIFY(strcmp(serialized, "{\"key\":\"value\"}") == 0);
     free(serialized);
@@ -52,7 +52,7 @@ TEST_CASE(serialize_arr, {
     JsonDocument_t* doc = jsonc_new_doc();
     jsonc_doc_set_array(doc, arr);
 
-    char* serialized = jsonc_doc_to_string(doc);
+    char* serialized = jsonc_doc_to_string(doc, 0);
 
     VERIFY(strcmp(serialized, "[\"Item1\",true]") == 0);
     free(serialized);
@@ -80,7 +80,7 @@ TEST_CASE(serialize_complex, {
     JsonDocument_t* doc = jsonc_new_doc();
     jsonc_doc_set_obj(doc, obj);
 
-    char* serialized = jsonc_doc_to_string(doc);
+    char* serialized = jsonc_doc_to_string(doc, 0);
     VERIFY(strcmp(serialized, "{\"key\":\"value\",\"boolean_true\":true,\"boolean_false\":false,\"NULL\":null,\"array\":[\"Item1\",2],\"subobject\":{\"subkey\":\"subvalue\"}}") == 0);
     free(serialized);
     jsonc_free_doc(doc);
@@ -100,7 +100,7 @@ TEST_CASE(serde_valid, {
     for (size_t i = 0; valid_docs[i]; i++) {
         JsonDocument_t* doc = jsonc_doc_from_string(valid_docs[i]);
         VERIFY(doc);
-        char* serialized = jsonc_doc_to_string(doc);
+        char* serialized = jsonc_doc_to_string(doc, 0);
         VERIFY(strcmp(valid_docs[i], serialized) == 0);
         free(serialized);
         jsonc_free_doc(doc);
