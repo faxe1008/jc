@@ -122,6 +122,14 @@ TEST_CASE(serde_invalid, {
     }
 })
 
+TEST_CASE(remove_obj, {
+    JsonDocument_t* doc = jsonc_doc_from_string("{\"key\":\"value\"}");
+    VERIFY(doc && jsonc_obj_get_string(doc->object, "key"));
+    jsonc_obj_remove(doc->object, "key");
+    VERIFY(!jsonc_obj_get_string(doc->object, "key"));
+    jsonc_free_doc(doc);
+});
+
 int main(int argc, char** argv)
 {
     REGISTER_TEST_CASE(set_and_get);
@@ -131,5 +139,6 @@ int main(int argc, char** argv)
     REGISTER_TEST_CASE(serialize_complex);
     REGISTER_TEST_CASE(serde_valid);
     REGISTER_TEST_CASE(serde_invalid);
+    REGISTER_TEST_CASE(remove_obj);
     RUN_TEST_SUITE(argc, argv);
 }

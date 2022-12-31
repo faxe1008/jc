@@ -259,6 +259,28 @@ void jsonc_obj_insert_value(JsonObject_t* obj, const char* key, JsonValueType_t 
     jsonc_obj_set(obj, key, value);
 }
 
+bool jsonc_obj_remove(JsonObject_t* obj, const char* key)
+{
+    if (!obj || !key)
+        return false;
+    JsonObjectEntry_t* previous = NULL;
+    for (JsonObjectEntry_t* cur = obj->entry; cur; previous = cur, cur = cur->next) {
+        if (strcmp(cur->key, key) == 0) {
+            if (!previous) {
+                JsonObjectEntry_t* prev_root = obj->entry;
+                obj->entry = obj->entry->next;
+                jsonc_free_obj_entry(prev_root);
+            } else {
+                JsonObjectEntry_t* next_to_cur = cur->next;
+                previous->next = next_to_cur;
+                jsonc_free_obj_entry(cur);
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 JsonValue_t* jsonc_obj_get(const JsonObject_t* obj, const char* key)
 {
     if (!obj || !key || !obj->entry)
