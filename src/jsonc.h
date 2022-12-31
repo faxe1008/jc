@@ -74,7 +74,7 @@ void jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value);
 void jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data);
 
 void jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value);
-void jsonc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data);
+void jsonc_obj_insert_value(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data);
 
 JsonValue_t* jsonc_obj_get(const JsonObject_t* obj, const char* key);
 const char* jsonc_obj_get_string(const JsonObject_t* obj, const char* key);

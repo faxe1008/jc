@@ -249,7 +249,7 @@ void jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value)
     entry->next = new_entry;
 }
 
-void jsonc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data)
+void jsonc_obj_insert_value(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data)
 {
     if (!data && ty != JSONC_BOOLEAN && ty != JSONC_NULL_LITERAL)
         return;
