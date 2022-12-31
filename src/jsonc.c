@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string_builder.h>
 
 JsonDocument_t* jsonc_new_doc()
 {
@@ -312,93 +313,16 @@ JsonArray_t* jsonc_obj_get_arr(const JsonObject_t* obj, const char* key)
 /*
  *   Serialization
  */
+static void builder_serialize_obj(StringBuilder_t*, const JsonObject_t*, size_t, size_t);
+static void builder_serialize_arr(StringBuilder_t*, const JsonArray_t*, size_t, size_t);
 
-typedef struct {
-    char* buffer;
-    size_t capacity;
-    size_t pos;
-} StringBuilder_t;
-
-void builder_reset(StringBuilder_t* builder)
+static void print_indent(StringBuilder_t* builder, size_t spaces_per_indent, size_t indent_level)
 {
-    memset(builder->buffer, 0, builder->capacity);
-    builder->capacity = 0;
-    builder->pos = 0;
+    for (size_t i = 0; i < spaces_per_indent * indent_level; i++)
+        builder_append_ch(builder, ' ');
 }
 
-bool builder_resize(StringBuilder_t* builder, size_t capacity)
-{
-    char* new_buffer = calloc(1, capacity);
-    if (!new_buffer)
-        return false;
-    if (builder->buffer) {
-        memcpy(new_buffer, builder->buffer, builder->capacity);
-        free(builder->buffer);
-    }
-    builder->buffer = new_buffer;
-    builder->capacity = capacity;
-    return true;
-}
-
-bool builder_append_ch(StringBuilder_t* builder, char ch)
-{
-    if (builder->pos + 1 >= builder->capacity) {
-        if (!builder_resize(builder, builder->capacity + 16))
-            return false;
-    }
-    builder->buffer[builder->pos++] = ch;
-    return true;
-}
-
-bool builder_append(StringBuilder_t* builder, const char* format, ...)
-{
-    if (!builder || builder->pos >= builder->capacity)
-        return false;
-    va_list args;
-    va_start(args, format);
-    size_t len = (size_t)vsnprintf(NULL, 0, format, args);
-    va_end(args);
-    va_start(args, format);
-    if (builder->pos + len >= builder->capacity) {
-        if (!builder_resize(builder, builder->capacity + len * 2))
-            return false;
-    }
-    vsnprintf(&builder->buffer[builder->pos], builder->capacity - builder->pos, format, args);
-    builder->pos += len;
-    va_end(args);
-    return true;
-}
-
-static void builder_append_escaped_str(StringBuilder_t* builder, const char* str)
-{
-    // TODO: unefficient because multiple realloc of the builder
-    for (size_t i = 0; i < strlen(str); i++) {
-        char ch = str[i];
-        switch (ch) {
-        case '\b':
-            builder_append(builder, "\\b");
-            break;
-        case '\n':
-            builder_append(builder, "\\n");
-            break;
-        case '\t':
-            builder_append(builder, "\\t");
-            break;
-        case '\"':
-            builder_append(builder, "\\\"");
-            break;
-        case '\\':
-            builder_append(builder, "\\\\");
-            break;
-        default:
-            builder_append_ch(builder, ch);
-        }
-    }
-}
-static void builder_serialize_obj(StringBuilder_t*, const JsonObject_t*);
-static void builder_serialize_arr(StringBuilder_t*, const JsonArray_t*);
-
-static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t* value)
+static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t* value, size_t spaces_per_indent, size_t indent_level)
 {
     if (!builder || !value)
         return;
@@ -412,10 +336,10 @@ static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t*
         builder_append(builder, "%g", value->number);
         break;
     case OBJECT:
-        builder_serialize_obj(builder, value->object);
+        builder_serialize_obj(builder, value->object, spaces_per_indent, indent_level);
         break;
     case ARRAY:
-        builder_serialize_arr(builder, value->array);
+        builder_serialize_arr(builder, value->array, spaces_per_indent, indent_level);
         break;
     case BOOLEAN:
         builder_append(builder, "%s", value->boolean ? "true" : "false");
@@ -426,52 +350,67 @@ static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t*
     }
 }
 
-void builder_serialize_obj(StringBuilder_t* builder, const JsonObject_t* obj)
+void builder_serialize_obj(StringBuilder_t* builder, const JsonObject_t* obj, size_t spaces_per_indent, size_t indent_level)
 {
     JsonObjectEntry_t* current = obj->entry;
     builder_append_ch(builder, '{');
+    if (spaces_per_indent != 0)
+        builder_append_ch(builder, '\n');
     while (current) {
+        print_indent(builder, spaces_per_indent, indent_level + 1);
         builder_append_ch(builder, '"');
         builder_append_escaped_str(builder, current->key);
         builder_append_ch(builder, '"');
         builder_append_ch(builder, ':');
+        if (spaces_per_indent != 0)
+            builder_append_ch(builder, ' ');
         if (current->value) {
-            builder_serialize_value(builder, current->value);
+            builder_serialize_value(builder, current->value, spaces_per_indent, indent_level + 1);
         } else {
+            print_indent(builder, spaces_per_indent, indent_level + 1);
             builder_append(builder, "null");
         }
         if (current->next)
             builder_append_ch(builder, ',');
+        if (spaces_per_indent != 0)
+            builder_append_ch(builder, '\n');
         current = current->next;
     }
+    print_indent(builder, spaces_per_indent, indent_level);
     builder_append_ch(builder, '}');
 }
 
-void builder_serialize_arr(StringBuilder_t* builder, const JsonArray_t* obj)
+void builder_serialize_arr(StringBuilder_t* builder, const JsonArray_t* obj, size_t spaces_per_indent, size_t indent_level)
 {
     JsonArrayEntry_t* current = obj->entry;
     builder_append_ch(builder, '[');
+    if (spaces_per_indent != 0)
+        builder_append_ch(builder, '\n');
     while (current) {
         if (current->value) {
-            builder_serialize_value(builder, current->value);
+            print_indent(builder, spaces_per_indent, indent_level + 1);
+            builder_serialize_value(builder, current->value, spaces_per_indent, indent_level + 1);
+            if (current->next)
+                builder_append_ch(builder, ',');
         }
-        if (current->next)
-            builder_append_ch(builder, ',');
+        if (spaces_per_indent != 0)
+            builder_append_ch(builder, '\n');
         current = current->next;
     }
+    print_indent(builder, spaces_per_indent, indent_level);
     builder_append_ch(builder, ']');
 }
 
-char* jsonc_doc_to_string(const JsonDocument_t* doc)
+char* jsonc_doc_to_string(const JsonDocument_t* doc, size_t spaces_per_indent)
 {
     if (doc->array && doc->object)
         return NULL;
     StringBuilder_t builder = { 0 };
     builder_resize(&builder, 64);
     if (doc->object)
-        builder_serialize_obj(&builder, doc->object);
+        builder_serialize_obj(&builder, doc->object, spaces_per_indent, 0);
     if (doc->array)
-        builder_serialize_arr(&builder, doc->array);
+        builder_serialize_arr(&builder, doc->array, spaces_per_indent, 0);
     return builder.buffer;
 }
 

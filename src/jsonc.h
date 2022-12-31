@@ -83,7 +83,7 @@ double* jsonc_obj_get_number(const JsonObject_t* obj, const char* key);
 JsonObject_t* jsonc_obj_get_obj(const JsonObject_t* obj, const char* key);
 JsonArray_t* jsonc_obj_get_arr(const JsonObject_t* obj, const char* key);
 
-char* jsonc_doc_to_string(const JsonDocument_t* doc);
+char* jsonc_doc_to_string(const JsonDocument_t* doc, size_t spaces_per_indent);
 JsonDocument_t* jsonc_doc_from_string(const char* str);
 
 #endif
