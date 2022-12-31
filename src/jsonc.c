@@ -21,7 +21,7 @@ JsonArray_t* jsonc_new_arr()
 
 JsonValue_t* jsonc_new_value(JsonValueType_t ty, void* data)
 {
-    if (!data && ty != NULL_LITERAL && ty != BOOLEAN)
+    if (!data && ty != JSONC_NULL_LITERAL && ty != JSONC_BOOLEAN)
         return NULL;
 
     JsonValue_t* value = (JsonValue_t*)calloc(1, sizeof(JsonValue_t));
@@ -29,25 +29,25 @@ JsonValue_t* jsonc_new_value(JsonValueType_t ty, void* data)
         return NULL;
     value->ty = ty;
     switch (ty) {
-    case STRING:
+    case JSONC_STRING:
         value->string = (char*)calloc(1, strlen((const char*)data) + 1);
         if (!value->string)
             return NULL;
         strcpy(value->string, (const char*)data);
         break;
-    case NUMBER:
+    case JSONC_NUMBER:
         value->number = *(const double*)data;
         break;
-    case OBJECT:
+    case JSONC_OBJECT:
         value->object = data;
         break;
-    case ARRAY:
+    case JSONC_ARRAY:
         value->array = data;
         break;
-    case BOOLEAN:
+    case JSONC_BOOLEAN:
         value->boolean = data != 0 ? true : false;
         break;
-    case NULL_LITERAL:
+    case JSONC_NULL_LITERAL:
         break;
     }
     return value;
@@ -58,7 +58,7 @@ JsonValue_t* jsonc_new_value_bool(bool b)
     JsonValue_t* value = (JsonValue_t*)calloc(1, sizeof(JsonValue_t));
     if (!value)
         return NULL;
-    value->ty = BOOLEAN;
+    value->ty = JSONC_BOOLEAN;
     value->boolean = b;
     return value;
 }
@@ -104,15 +104,15 @@ void jsonc_free_value(JsonValue_t* value)
 {
     if (!value)
         return;
-    if (value->ty == STRING && value->string) {
+    if (value->ty == JSONC_STRING && value->string) {
         free(value->string);
         value->string = NULL;
     }
-    if (value->ty == OBJECT && value->object) {
+    if (value->ty == JSONC_OBJECT && value->object) {
         jsonc_free_obj(value->object);
         value->object = NULL;
     }
-    if (value->ty == ARRAY && value->array) {
+    if (value->ty == JSONC_ARRAY && value->array) {
         jsonc_free_arr(value->array);
         value->array = NULL;
     }
@@ -251,7 +251,7 @@ void jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value)
 
 void jsonc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data)
 {
-    if (!data && ty != BOOLEAN && ty != NULL_LITERAL)
+    if (!data && ty != JSONC_BOOLEAN && ty != JSONC_NULL_LITERAL)
         return;
     if (!obj || !key)
         return;
@@ -277,7 +277,7 @@ JsonValue_t* jsonc_obj_get(const JsonObject_t* obj, const char* key)
 const char* jsonc_obj_get_string(const JsonObject_t* obj, const char* key)
 {
     JsonValue_t* value = jsonc_obj_get(obj, key);
-    if (!value || value->ty != STRING)
+    if (!value || value->ty != JSONC_STRING)
         return NULL;
     return value->string;
 }
@@ -285,7 +285,7 @@ const char* jsonc_obj_get_string(const JsonObject_t* obj, const char* key)
 bool* jsonc_obj_get_bool(const JsonObject_t* obj, const char* key)
 {
     JsonValue_t* value = jsonc_obj_get(obj, key);
-    if (!value || value->ty != BOOLEAN)
+    if (!value || value->ty != JSONC_BOOLEAN)
         return NULL;
     return &value->boolean;
 }
@@ -293,7 +293,7 @@ bool* jsonc_obj_get_bool(const JsonObject_t* obj, const char* key)
 double* jsonc_obj_get_number(const JsonObject_t* obj, const char* key)
 {
     JsonValue_t* value = jsonc_obj_get(obj, key);
-    if (!value || value->ty != NUMBER)
+    if (!value || value->ty != JSONC_NUMBER)
         return NULL;
     return &value->number;
 }
@@ -301,7 +301,7 @@ double* jsonc_obj_get_number(const JsonObject_t* obj, const char* key)
 JsonObject_t* jsonc_obj_get_obj(const JsonObject_t* obj, const char* key)
 {
     JsonValue_t* value = jsonc_obj_get(obj, key);
-    if (!value || value->ty != OBJECT)
+    if (!value || value->ty != JSONC_OBJECT)
         return NULL;
     return value->object;
 }
@@ -309,7 +309,7 @@ JsonObject_t* jsonc_obj_get_obj(const JsonObject_t* obj, const char* key)
 JsonArray_t* jsonc_obj_get_arr(const JsonObject_t* obj, const char* key)
 {
     JsonValue_t* value = jsonc_obj_get(obj, key);
-    if (!value || value->ty != ARRAY)
+    if (!value || value->ty != JSONC_ARRAY)
         return NULL;
     return value->array;
 }
@@ -331,24 +331,24 @@ static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t*
     if (!builder || !value)
         return;
     switch (value->ty) {
-    case STRING:
+    case JSONC_STRING:
         builder_append_ch(builder, '"');
         builder_append_escaped_str(builder, value->string);
         builder_append_ch(builder, '"');
         break;
-    case NUMBER:
+    case JSONC_NUMBER:
         builder_append(builder, "%g", value->number);
         break;
-    case OBJECT:
+    case JSONC_OBJECT:
         builder_serialize_obj(builder, value->object, spaces_per_indent, indent_level);
         break;
-    case ARRAY:
+    case JSONC_ARRAY:
         builder_serialize_arr(builder, value->array, spaces_per_indent, indent_level);
         break;
-    case BOOLEAN:
+    case JSONC_BOOLEAN:
         builder_append(builder, "%s", value->boolean ? "true" : "false");
         break;
-    case NULL_LITERAL:
+    case JSONC_NULL_LITERAL:
         builder_append(builder, "null");
         break;
     }
@@ -584,7 +584,7 @@ JsonValue_t* parse_string(JsonParser_t* parser)
         free(builder.buffer);
         return NULL;
     }
-    JsonValue_t* value = jsonc_new_value(STRING, builder.buffer);
+    JsonValue_t* value = jsonc_new_value(JSONC_STRING, builder.buffer);
     free(builder.buffer);
     return value;
 }
@@ -607,7 +607,7 @@ JsonValue_t* parse_null(JsonParser_t* parser)
 {
     if (!parser_consume_specific(parser, "null"))
         return NULL;
-    return jsonc_new_value(NULL_LITERAL, NULL);
+    return jsonc_new_value(JSONC_NULL_LITERAL, NULL);
 }
 
 JsonValue_t* parse_number(JsonParser_t* parser)
@@ -680,7 +680,7 @@ JsonValue_t* parse_number(JsonParser_t* parser)
 
     double value = atof(builder.buffer);
     free(builder.buffer);
-    return jsonc_new_value(NUMBER, &value);
+    return jsonc_new_value(JSONC_NUMBER, &value);
 EXIT_ERROR:
     free(builder.buffer);
     return NULL;
@@ -694,12 +694,12 @@ JsonValue_t* parse_value(JsonParser_t* parser)
     case '{':
         JsonObject_t* obj = parse_obj(parser);
         if (obj)
-            return jsonc_new_value(OBJECT, obj);
+            return jsonc_new_value(JSONC_OBJECT, obj);
         break;
     case '[':
         JsonArray_t* arr = parse_arr(parser);
         if (arr)
-            return jsonc_new_value(ARRAY, arr);
+            return jsonc_new_value(JSONC_ARRAY, arr);
         break;
     case '"':
         return parse_string(parser);

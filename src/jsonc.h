@@ -11,12 +11,12 @@ typedef struct JsonArray_t JsonArray_t;
 typedef struct JsonArrayEntry_t JsonArrayEntry_t;
 
 typedef enum {
-    STRING,
-    NUMBER,
-    OBJECT,
-    ARRAY,
-    BOOLEAN,
-    NULL_LITERAL,
+    JSONC_STRING,
+    JSONC_NUMBER,
+    JSONC_OBJECT,
+    JSONC_ARRAY,
+    JSONC_BOOLEAN,
+    JSONC_NULL_LITERAL,
 } JsonValueType_t;
 
 typedef struct {
