@@ -544,7 +544,10 @@ bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
         }
 
         while (peek_index != parser->pos) {
-            builder_append_ch(builder, parser_consume(parser));
+            char ch = parser_consume(parser);
+            if(ch == '\t' || ch == '\n')
+                return false;
+            builder_append_ch(builder, ch);
         }
         if (parser_eof(parser))
             break;
@@ -603,6 +606,8 @@ bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
             builder_append_ch(builder, '\f');
             continue;
         }
+
+        return false;
     }
 
     if (!parser_consume_specific(parser, "\""))
