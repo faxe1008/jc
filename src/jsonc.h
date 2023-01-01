@@ -64,17 +64,17 @@ void jsonc_free_doc(JsonDocument_t* doc);
 void jsonc_free_obj(JsonObject_t* obj);
 void jsonc_free_arr(JsonArray_t* arr);
 void jsonc_free_value(JsonValue_t* value);
-void jsonc_free_array_entry(JsonArrayEntry_t* entry);
-void jsonc_free_obj_entry(JsonObjectEntry_t* entry);
 
-void jsonc_doc_set_obj(JsonDocument_t* doc, JsonObject_t* obj);
-void jsonc_doc_set_array(JsonDocument_t* doc, JsonArray_t* obj);
+bool jsonc_doc_set_obj(JsonDocument_t* doc, JsonObject_t* obj);
+bool jsonc_doc_is_obj(const JsonDocument_t* doc);
+bool jsonc_doc_set_arr(JsonDocument_t* doc, JsonArray_t* obj);
+bool jsonc_doc_is_arr(const JsonDocument_t* doc);
 
-void jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value);
-void jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data);
+bool jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value);
+bool jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data);
 
-void jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value);
-void jsonc_obj_insert_value(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data);
+bool jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value);
+bool jsonc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data);
 bool jsonc_obj_remove(JsonObject_t* obj, const char* key);
 
 JsonValue_t* jsonc_obj_get(const JsonObject_t* obj, const char* key);

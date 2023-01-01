@@ -3,8 +3,8 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 void builder_reset(StringBuilder_t* builder)
 {
@@ -33,7 +33,7 @@ bool builder_append_ch(StringBuilder_t* builder, char ch)
 {
     assert(builder);
     if (builder->pos + 1 >= builder->capacity) {
-        if (!builder_resize(builder, builder->capacity + 16))
+        if (!builder_resize(builder, builder->capacity + 64))
             return false;
     }
     builder->buffer[builder->pos++] = ch;

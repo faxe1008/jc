@@ -6,6 +6,19 @@
 #include <string.h>
 #include <string_builder.h>
 
+typedef struct {
+    const char* text;
+    size_t pos;
+    size_t len;
+} JsonParser_t;
+
+static void jsonc_free_array_entry(JsonArrayEntry_t*);
+static void jsonc_free_obj_entry(JsonObjectEntry_t*);
+static void builder_serialize_obj(StringBuilder_t*, const JsonObject_t*, size_t, size_t);
+static void builder_serialize_arr(StringBuilder_t*, const JsonArray_t*, size_t, size_t);
+static JsonObject_t* parse_obj(JsonParser_t*);
+static JsonArray_t* parse_arr(JsonParser_t*);
+
 JsonDocument_t* jsonc_new_doc()
 {
     return (JsonDocument_t*)calloc(1, sizeof(JsonDocument_t));
@@ -144,50 +157,63 @@ void jsonc_free_obj_entry(JsonObjectEntry_t* entry)
     free(entry);
 }
 
-void jsonc_doc_set_obj(JsonDocument_t* doc, JsonObject_t* obj)
+bool jsonc_doc_set_obj(JsonDocument_t* doc, JsonObject_t* obj)
 {
     if (!doc || !obj)
-        return;
+        return false;
     if (doc->object && doc->object != obj)
         jsonc_free_obj(doc->object);
     if (doc->array)
         jsonc_free_arr(doc->array);
     doc->object = obj;
+    return true;
 }
 
-void jsonc_doc_set_array(JsonDocument_t* doc, JsonArray_t* arr)
+bool jsonc_doc_is_obj(const JsonDocument_t* doc)
+{
+    return doc->object != NULL;
+}
+
+bool jsonc_doc_set_arr(JsonDocument_t* doc, JsonArray_t* arr)
 {
     if (!doc || !arr)
-        return;
+        return false;
     if (doc->object)
         jsonc_free_obj(doc->object);
     if (doc->array && doc->array != arr)
         jsonc_free_arr(doc->array);
     doc->array = arr;
+    return true;
 }
 
-void jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data)
+bool jsonc_doc_is_arr(const JsonDocument_t* doc)
+{
+    return doc->array != NULL;
+}
+
+bool jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data)
 {
     if (!arr || !data)
-        return;
+        return false;
     JsonValue_t* value = jsonc_new_value(ty, data);
     if (!value)
-        return;
+        return false;
     jsonc_arr_insert_value(arr, value);
+    return true;
 }
 
-void jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value)
+bool jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value)
 {
     if (!arr || !value)
-        return;
+        return false;
     JsonArrayEntry_t* new_entry = (JsonArrayEntry_t*)calloc(1, sizeof(JsonArrayEntry_t));
     if (!new_entry)
-        return;
+        return false;
     new_entry->value = value;
 
     if (!arr->entry) {
         arr->entry = new_entry;
-        return;
+        return false;
     }
 
     JsonArrayEntry_t* entry = arr->entry;
@@ -197,6 +223,7 @@ void jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value)
         entry = entry->next;
     }
     entry->next = new_entry;
+    return true;
 }
 
 static JsonObjectEntry_t* jsonc_new_object_entry(const char* key, JsonValue_t* value)
@@ -214,18 +241,18 @@ static JsonObjectEntry_t* jsonc_new_object_entry(const char* key, JsonValue_t* v
     return new_entry;
 }
 
-void jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value)
+bool jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value)
 {
     if (!obj || !key || !value)
-        return;
+        return false;
 
     // First entry in object
     if (!obj->entry) {
         JsonObjectEntry_t* new_entry = jsonc_new_object_entry(key, value);
         if (!new_entry)
-            return;
+            return false;
         obj->entry = new_entry;
-        return;
+        return true;
     }
 
     // Iterate through entries, check if key exists, only swap value if needed
@@ -235,7 +262,7 @@ void jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value)
             if (entry->value)
                 jsonc_free_value(entry->value);
             entry->value = value;
-            return;
+            return true;
         }
         if (!entry->next)
             break;
@@ -245,18 +272,22 @@ void jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value)
     // Key was not found, reached the end of the list
     JsonObjectEntry_t* new_entry = jsonc_new_object_entry(key, value);
     if (!new_entry)
-        return;
+        return false;
     entry->next = new_entry;
+    return true;
 }
 
-void jsonc_obj_insert_value(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data)
+bool jsonc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data)
 {
     if (!data && ty != JSONC_BOOLEAN && ty != JSONC_NULL_LITERAL)
-        return;
+        return false;
     if (!obj || !key)
-        return;
+        return false;
     JsonValue_t* value = jsonc_new_value(ty, data);
+    if (!value)
+        return false;
     jsonc_obj_set(obj, key, value);
+    return true;
 }
 
 bool jsonc_obj_remove(JsonObject_t* obj, const char* key)
@@ -339,8 +370,6 @@ JsonArray_t* jsonc_obj_get_arr(const JsonObject_t* obj, const char* key)
 /*
  *   Serialization
  */
-static void builder_serialize_obj(StringBuilder_t*, const JsonObject_t*, size_t, size_t);
-static void builder_serialize_arr(StringBuilder_t*, const JsonArray_t*, size_t, size_t);
 
 static void print_indent(StringBuilder_t* builder, size_t spaces_per_indent, size_t indent_level)
 {
@@ -444,17 +473,6 @@ char* jsonc_doc_to_string(const JsonDocument_t* doc, size_t spaces_per_indent)
  * Parsing
  */
 
-typedef struct {
-    const char* text;
-    size_t pos;
-    size_t len;
-} JsonParser_t;
-
-typedef struct {
-    const char* text;
-    size_t len;
-} StringView_t;
-
 bool parser_eof(const JsonParser_t* parser) { return parser->pos >= parser->len; }
 
 void parser_ignore(JsonParser_t* parser, size_t count)
@@ -508,9 +526,6 @@ bool is_space(char ch)
 {
     return ch == '\t' || ch == '\n' || ch == '\r' || ch == ' ';
 }
-
-static JsonObject_t* parse_obj(JsonParser_t*);
-static JsonArray_t* parse_arr(JsonParser_t*);
 
 bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
 {
@@ -864,7 +879,7 @@ JsonDocument_t* parse_doc(JsonParser_t* parser)
     case '[':
         JsonArray_t* arr = parse_arr(parser);
         if (arr) {
-            jsonc_doc_set_array(doc, arr);
+            jsonc_doc_set_arr(doc, arr);
             return doc;
         }
         break;

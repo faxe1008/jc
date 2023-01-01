@@ -30,7 +30,7 @@ TEST_CASE(replace_value, {
 
 TEST_CASE(serialize_obj, {
     JsonObject_t* obj = jsonc_new_obj();
-    jsonc_obj_insert_value(obj, "key", JSONC_STRING, "value");
+    jsonc_obj_insert(obj, "key", JSONC_STRING, "value");
 
     JsonDocument_t* doc = jsonc_new_doc();
     jsonc_doc_set_obj(doc, obj);
@@ -50,7 +50,7 @@ TEST_CASE(serialize_arr, {
     jsonc_arr_insert_value(arr, v2);
 
     JsonDocument_t* doc = jsonc_new_doc();
-    jsonc_doc_set_array(doc, arr);
+    jsonc_doc_set_arr(doc, arr);
 
     char* serialized = jsonc_doc_to_string(doc, 0);
 
@@ -62,7 +62,7 @@ TEST_CASE(serialize_arr, {
 TEST_CASE(serialize_complex, {
     JsonObject_t* obj = jsonc_new_obj();
 
-    jsonc_obj_insert_value(obj, "key", JSONC_STRING, "value");
+    jsonc_obj_insert(obj, "key", JSONC_STRING, "value");
     jsonc_obj_set(obj, "boolean_true", jsonc_new_value_bool(true));
     jsonc_obj_set(obj, "boolean_false", jsonc_new_value_bool(false));
     jsonc_obj_set(obj, "NULL", jsonc_new_value(JSONC_NULL_LITERAL, NULL));
@@ -74,7 +74,7 @@ TEST_CASE(serialize_complex, {
     jsonc_obj_set(obj, "array", jsonc_new_value(JSONC_ARRAY, arr));
 
     JsonObject_t* sub = jsonc_new_obj();
-    jsonc_obj_insert_value(sub, "subkey", JSONC_STRING, "subvalue");
+    jsonc_obj_insert(sub, "subkey", JSONC_STRING, "subvalue");
     jsonc_obj_set(obj, "subobject", jsonc_new_value(JSONC_OBJECT, sub));
 
     JsonDocument_t* doc = jsonc_new_doc();

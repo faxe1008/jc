@@ -1,9 +1,9 @@
 #ifndef JSONC_STRING_BUILDER__
 #define JSONC_STRING_BUILDER__
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct {
     char* buffer;

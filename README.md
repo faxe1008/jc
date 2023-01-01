@@ -9,7 +9,7 @@ JSON document:
 
 ``` c
 JsonObject_t* obj = jsonc_new_obj();
-jsonc_obj_insert_value(obj, "key", JSONC_STRING, "value");
+jsonc_obj_insert(obj, "key", JSONC_STRING, "value");
 
 JsonDocument_t* doc = jsonc_new_doc();
 jsonc_doc_set_obj(doc, obj);
