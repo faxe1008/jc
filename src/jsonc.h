@@ -8,7 +8,6 @@ typedef struct JsonObject_t JsonObject_t;
 typedef struct JsonObjectEntry_t JsonObjectEntry_t;
 
 typedef struct JsonArray_t JsonArray_t;
-typedef struct JsonArrayEntry_t JsonArrayEntry_t;
 
 typedef enum {
     JSONC_STRING,
@@ -30,13 +29,10 @@ typedef struct {
     JsonValueType_t ty;
 } JsonValue_t;
 
-struct JsonArrayEntry_t {
-    JsonValue_t* value;
-    JsonArrayEntry_t* next;
-};
-
 struct JsonArray_t {
-    JsonArrayEntry_t* entry;
+    size_t size;
+    size_t capacity;
+    JsonValue_t** data;
 };
 
 struct JsonObjectEntry_t {

@@ -6,13 +6,16 @@
 #include <string.h>
 #include <string_builder.h>
 
+#ifndef JSONC_INIT_ARR_CAPACITY
+#    define JSONC_INIT_ARR_CAPACITY 4
+#endif
+
 typedef struct {
     const char* text;
     size_t pos;
     size_t len;
 } JsonParser_t;
 
-static void jsonc_free_array_entry(JsonArrayEntry_t*);
 static void jsonc_free_obj_entry(JsonObjectEntry_t*);
 static void builder_serialize_obj(StringBuilder_t*, const JsonObject_t*, size_t, size_t);
 static void builder_serialize_arr(StringBuilder_t*, const JsonArray_t*, size_t, size_t);
@@ -23,13 +26,24 @@ JsonDocument_t* jsonc_new_doc()
 {
     return (JsonDocument_t*)calloc(1, sizeof(JsonDocument_t));
 }
+
 JsonObject_t* jsonc_new_obj()
 {
     return (JsonObject_t*)calloc(1, sizeof(JsonObject_t));
 }
+
 JsonArray_t* jsonc_new_arr()
 {
-    return (JsonArray_t*)calloc(1, sizeof(JsonArray_t));
+    JsonArray_t* arr = (JsonArray_t*)calloc(1, sizeof(JsonArray_t));
+    if (!arr)
+        return NULL;
+    arr->data = (JsonValue_t**)calloc(1, JSONC_INIT_ARR_CAPACITY * sizeof(JsonValue_t*));
+    if (!arr->data) {
+        free(arr);
+        return NULL;
+    }
+    arr->capacity = JSONC_INIT_ARR_CAPACITY;
+    return arr;
 }
 
 JsonValue_t* jsonc_new_value(JsonValueType_t ty, void* data)
@@ -104,12 +118,9 @@ void jsonc_free_arr(JsonArray_t* arr)
 {
     if (!arr)
         return;
-    JsonArrayEntry_t* current = arr->entry;
-    while (current) {
-        JsonArrayEntry_t* next = current->next;
-        jsonc_free_array_entry(current);
-        current = next;
-    }
+    for (size_t i = 0; i < arr->size; i++)
+        jsonc_free_value(arr->data[i]);
+    free(arr->data);
     free(arr);
 }
 
@@ -132,16 +143,6 @@ void jsonc_free_value(JsonValue_t* value)
     free(value);
 }
 
-void jsonc_free_array_entry(JsonArrayEntry_t* entry)
-{
-    if (!entry)
-        return;
-    if (entry->value) {
-        jsonc_free_value(entry->value);
-        entry->value = NULL;
-    }
-    free(entry);
-}
 void jsonc_free_obj_entry(JsonObjectEntry_t* entry)
 {
     if (!entry)
@@ -198,7 +199,10 @@ bool jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data)
     JsonValue_t* value = jsonc_new_value(ty, data);
     if (!value)
         return false;
-    jsonc_arr_insert_value(arr, value);
+    if (!jsonc_arr_insert_value(arr, value)) {
+        jsonc_free_value(value);
+        return false;
+    }
     return true;
 }
 
@@ -206,23 +210,17 @@ bool jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value)
 {
     if (!arr || !value)
         return false;
-    JsonArrayEntry_t* new_entry = (JsonArrayEntry_t*)calloc(1, sizeof(JsonArrayEntry_t));
-    if (!new_entry)
-        return false;
-    new_entry->value = value;
-
-    if (!arr->entry) {
-        arr->entry = new_entry;
-        return false;
+    if (arr->size + 1 >= arr->capacity) {
+        JsonValue_t** new_buffer = (JsonValue_t**)calloc(1, arr->capacity * 2 * sizeof(JsonValue_t*));
+        if (!new_buffer)
+            return false;
+        memcpy(new_buffer, arr->data, arr->size * sizeof(JsonArray_t*));
+        free(arr->data);
+        arr->data = new_buffer;
+        arr->capacity = arr->capacity * 2;
     }
-
-    JsonArrayEntry_t* entry = arr->entry;
-    for (;;) {
-        if (!entry->next)
-            break;
-        entry = entry->next;
-    }
-    entry->next = new_entry;
+    arr->data[arr->size] = value;
+    arr->size++;
     return true;
 }
 
@@ -435,23 +433,24 @@ void builder_serialize_obj(StringBuilder_t* builder, const JsonObject_t* obj, si
     builder_append_ch(builder, '}');
 }
 
-void builder_serialize_arr(StringBuilder_t* builder, const JsonArray_t* obj, size_t spaces_per_indent, size_t indent_level)
+void builder_serialize_arr(StringBuilder_t* builder, const JsonArray_t* arr, size_t spaces_per_indent, size_t indent_level)
 {
-    JsonArrayEntry_t* current = obj->entry;
     builder_append_ch(builder, '[');
     if (spaces_per_indent != 0)
         builder_append_ch(builder, '\n');
-    while (current) {
-        if (current->value) {
+
+    for (size_t i = 0; i < arr->size; i++) {
+        JsonValue_t* current = arr->data[i];
+        if (current) {
             print_indent(builder, spaces_per_indent, indent_level + 1);
-            builder_serialize_value(builder, current->value, spaces_per_indent, indent_level + 1);
-            if (current->next)
+            builder_serialize_value(builder, current, spaces_per_indent, indent_level + 1);
+            if (i + 1 < arr->size)
                 builder_append_ch(builder, ',');
+            if (spaces_per_indent != 0)
+                builder_append_ch(builder, '\n');
         }
-        if (spaces_per_indent != 0)
-            builder_append_ch(builder, '\n');
-        current = current->next;
     }
+
     print_indent(builder, spaces_per_indent, indent_level);
     builder_append_ch(builder, ']');
 }
