@@ -29,14 +29,32 @@ bool builder_resize(StringBuilder_t* builder, size_t capacity)
     return true;
 }
 
+static inline bool builder_ensure_capacity(StringBuilder_t* builder, size_t len)
+{
+    if (builder->pos + len < builder->capacity)
+        return true;
+    size_t additional_capacity = builder->capacity;
+    if (builder->capacity < len) 
+        additional_capacity = len;
+    return builder_resize(builder, builder->capacity + additional_capacity);
+}
+
 bool builder_append_ch(StringBuilder_t* builder, char ch)
 {
     assert(builder);
-    if (builder->pos + 1 >= builder->capacity) {
-        if (!builder_resize(builder, builder->capacity + 64))
-            return false;
-    }
+    if (!builder_ensure_capacity(builder, 1))
+        return false;
     builder->buffer[builder->pos++] = ch;
+    return true;
+}
+
+bool builder_append_chrs(StringBuilder_t* builder, char ch, size_t count)
+{
+    assert(builder);
+    if (!builder_ensure_capacity(builder, count))
+        return false;
+    memset(&builder->buffer[builder->pos], ch, count);
+    builder->pos += count;
     return true;
 }
 
@@ -50,10 +68,8 @@ bool builder_append(StringBuilder_t* builder, const char* format, ...)
     size_t len = (size_t)vsnprintf(NULL, 0, format, args);
     va_end(args);
     va_start(args, format);
-    if (builder->pos + len >= builder->capacity) {
-        if (!builder_resize(builder, builder->capacity + len * 2))
-            return false;
-    }
+    if (!builder_ensure_capacity(builder, len)) 
+        return false;
     vsnprintf(&builder->buffer[builder->pos], builder->capacity - builder->pos, format, args);
     builder->pos += len;
     va_end(args);
@@ -63,8 +79,10 @@ bool builder_append(StringBuilder_t* builder, const char* format, ...)
 void builder_append_escaped_str(StringBuilder_t* builder, const char* str)
 {
     assert(builder);
-    // TODO: unefficient because multiple realloc of the builder
-    for (size_t i = 0; i < strlen(str); i++) {
+    size_t str_len = strlen(str);
+    if (!builder_ensure_capacity(builder, str_len))
+        return;
+    for (size_t i = 0; i < str_len; i++) {
         char ch = str[i];
         switch (ch) {
         case '\b':

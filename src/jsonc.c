@@ -371,8 +371,7 @@ JsonArray_t* jsonc_obj_get_arr(const JsonObject_t* obj, const char* key)
 
 static void print_indent(StringBuilder_t* builder, size_t spaces_per_indent, size_t indent_level)
 {
-    for (size_t i = 0; i < spaces_per_indent * indent_level; i++)
-        builder_append_ch(builder, ' ');
+    builder_append_chrs(builder, ' ', spaces_per_indent * indent_level);
 }
 
 static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t* value, size_t spaces_per_indent, size_t indent_level)

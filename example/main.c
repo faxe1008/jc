@@ -8,7 +8,7 @@
 static bool read_doc_from_file(StringBuilder_t*, FILE*);
 
 #ifndef READ_BUFFER_CAP
-#    define READ_BUFFER_CAP 1024
+#    define READ_BUFFER_CAP 4096
 #endif
 
 int main(int argc, char** argv)
