@@ -57,10 +57,9 @@ JsonValue_t* jsonc_new_value(JsonValueType_t ty, void* data)
     value->ty = ty;
     switch (ty) {
     case JSONC_STRING:
-        value->string = (char*)calloc(1, strlen((const char*)data) + 1);
+        value->string = strdup(data);
         if (!value->string)
             return NULL;
-        strcpy(value->string, (const char*)data);
         break;
     case JSONC_NUMBER:
         value->number = *(const double*)data;
@@ -229,12 +228,11 @@ static JsonObjectEntry_t* jsonc_new_object_entry(const char* key, JsonValue_t* v
     JsonObjectEntry_t* new_entry = (JsonObjectEntry_t*)calloc(1, sizeof(JsonObjectEntry_t));
     if (!new_entry)
         return NULL;
-    new_entry->key = (char*)malloc(strlen(key) + 1);
+    new_entry->key = strdup(key);
     if (!new_entry->key) {
         free(new_entry);
         return NULL;
     }
-    strcpy(new_entry->key, key);
     new_entry->value = value;
     return new_entry;
 }
