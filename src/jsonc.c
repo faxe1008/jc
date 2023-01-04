@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string_builder.h>
+#include <olh_map.h>
 
 #ifndef JSONC_INIT_ARR_CAPACITY
 #    define JSONC_INIT_ARR_CAPACITY 4
@@ -13,6 +14,21 @@
 #ifndef JSONC_INIT_OBJ_CAPACITY
 #    define JSONC_INIT_OBJ_CAPACITY 4
 #endif
+
+struct JsonArray_t {
+    size_t size;
+    size_t capacity;
+    JsonValue_t** data;
+};
+
+struct JsonObject_t {
+    OrderedLinkedHashMap_t olh_map;
+};
+
+struct JsonDocument_t {
+    JsonObject_t* object;
+    JsonArray_t* array;
+};
 
 typedef struct {
     const char* text;

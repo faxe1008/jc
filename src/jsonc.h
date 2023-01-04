@@ -1,14 +1,12 @@
 #ifndef JSONC__
 #define JSONC__
-#include <olh_map.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct JsonObject_t JsonObject_t;
-typedef struct JsonObjectEntry_t JsonObjectEntry_t;
-
 typedef struct JsonArray_t JsonArray_t;
+typedef struct JsonObject_t JsonObject_t;
+typedef struct JsonDocument_t JsonDocument_t;
 
 typedef enum {
     JSONC_STRING,
@@ -29,21 +27,6 @@ typedef struct {
     };
     JsonValueType_t ty;
 } JsonValue_t;
-
-struct JsonArray_t {
-    size_t size;
-    size_t capacity;
-    JsonValue_t** data;
-};
-
-struct JsonObject_t {
-    OrderedLinkedHashMap_t olh_map;
-};
-
-typedef struct {
-    JsonObject_t* object;
-    JsonArray_t* array;
-} JsonDocument_t;
 
 JsonDocument_t* jsonc_new_doc();
 JsonObject_t* jsonc_new_obj();
