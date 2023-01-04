@@ -688,9 +688,9 @@ JsonValue_t* parse_number(JsonParser_t* parser)
         if (ch == '+' || ch == '-') {
             builder_append_ch(&builder, parser_consume(parser));
             ch = parser_peek(parser, 0);
-            if (ch < '1' || ch > '9')
+            if (ch < '0' || ch > '9')
                 goto EXIT_ERROR;
-        } else if (ch >= '1' && ch <= '9') {
+        } else if (ch >= '0' && ch <= '9') {
             builder_append_ch(&builder, parser_consume(parser));
         } else {
             goto EXIT_ERROR;
