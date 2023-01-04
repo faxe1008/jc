@@ -1,5 +1,6 @@
 #ifndef JSONC__
 #define JSONC__
+#include <olh_map.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -35,14 +36,8 @@ struct JsonArray_t {
     JsonValue_t** data;
 };
 
-struct JsonObjectEntry_t {
-    char* key;
-    JsonValue_t* value;
-    JsonObjectEntry_t* next;
-};
-
 struct JsonObject_t {
-    JsonObjectEntry_t* entry;
+    OrderedLinkedHashMap_t olh_map;
 };
 
 typedef struct {

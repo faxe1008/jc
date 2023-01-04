@@ -10,13 +10,16 @@
 #    define JSONC_INIT_ARR_CAPACITY 4
 #endif
 
+#ifndef JSONC_INIT_OBJ_CAPACITY
+#    define JSONC_INIT_OBJ_CAPACITY 4
+#endif
+
 typedef struct {
     const char* text;
     size_t pos;
     size_t len;
 } JsonParser_t;
 
-static void jsonc_free_obj_entry(JsonObjectEntry_t*);
 static void builder_serialize_obj(StringBuilder_t*, const JsonObject_t*, size_t, size_t);
 static void builder_serialize_arr(StringBuilder_t*, const JsonArray_t*, size_t, size_t);
 static JsonObject_t* parse_obj(JsonParser_t*);
@@ -29,7 +32,15 @@ JsonDocument_t* jsonc_new_doc()
 
 JsonObject_t* jsonc_new_obj()
 {
-    return (JsonObject_t*)calloc(1, sizeof(JsonObject_t));
+    JsonObject_t* obj = (JsonObject_t*)calloc(1, sizeof(JsonObject_t));
+    if (!obj)
+        return NULL;
+    obj->olh_map.value_free_func = (olc_value_free)jsonc_free_value;
+    if (!olh_map_rehash(&obj->olh_map, JSONC_INIT_OBJ_CAPACITY)) {
+        free(obj);
+        return NULL;
+    }
+    return obj;
 }
 
 JsonArray_t* jsonc_new_arr()
@@ -104,12 +115,7 @@ void jsonc_free_obj(JsonObject_t* obj)
 {
     if (!obj)
         return;
-    JsonObjectEntry_t* current = obj->entry;
-    while (current) {
-        JsonObjectEntry_t* next = current->next;
-        jsonc_free_obj_entry(current);
-        current = next;
-    }
+    olh_map_free(&obj->olh_map);
     free(obj);
 }
 
@@ -140,21 +146,6 @@ void jsonc_free_value(JsonValue_t* value)
         value->array = NULL;
     }
     free(value);
-}
-
-void jsonc_free_obj_entry(JsonObjectEntry_t* entry)
-{
-    if (!entry)
-        return;
-    if (entry->value) {
-        jsonc_free_value(entry->value);
-        entry->value = NULL;
-    }
-    if (entry->key) {
-        free(entry->key);
-        entry->key = NULL;
-    }
-    free(entry);
 }
 
 bool jsonc_doc_set_obj(JsonDocument_t* doc, JsonObject_t* obj)
@@ -223,54 +214,11 @@ bool jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value)
     return true;
 }
 
-static JsonObjectEntry_t* jsonc_new_object_entry(const char* key, JsonValue_t* value)
-{
-    JsonObjectEntry_t* new_entry = (JsonObjectEntry_t*)calloc(1, sizeof(JsonObjectEntry_t));
-    if (!new_entry)
-        return NULL;
-    new_entry->key = strdup(key);
-    if (!new_entry->key) {
-        free(new_entry);
-        return NULL;
-    }
-    new_entry->value = value;
-    return new_entry;
-}
-
 bool jsonc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value)
 {
     if (!obj || !key || !value)
         return false;
-
-    // First entry in object
-    if (!obj->entry) {
-        JsonObjectEntry_t* new_entry = jsonc_new_object_entry(key, value);
-        if (!new_entry)
-            return false;
-        obj->entry = new_entry;
-        return true;
-    }
-
-    // Iterate through entries, check if key exists, only swap value if needed
-    JsonObjectEntry_t* entry = obj->entry;
-    for (;;) {
-        if (entry->value != value && strcmp(entry->key, key) == 0) {
-            if (entry->value)
-                jsonc_free_value(entry->value);
-            entry->value = value;
-            return true;
-        }
-        if (!entry->next)
-            break;
-        entry = entry->next;
-    }
-
-    // Key was not found, reached the end of the list
-    JsonObjectEntry_t* new_entry = jsonc_new_object_entry(key, value);
-    if (!new_entry)
-        return false;
-    entry->next = new_entry;
-    return true;
+    return olh_map_set(&obj->olh_map, key, value);
 }
 
 bool jsonc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data)
@@ -290,37 +238,14 @@ bool jsonc_obj_remove(JsonObject_t* obj, const char* key)
 {
     if (!obj || !key)
         return false;
-    JsonObjectEntry_t* previous = NULL;
-    for (JsonObjectEntry_t* cur = obj->entry; cur; previous = cur, cur = cur->next) {
-        if (strcmp(cur->key, key) == 0) {
-            if (!previous) {
-                JsonObjectEntry_t* prev_root = obj->entry;
-                obj->entry = obj->entry->next;
-                jsonc_free_obj_entry(prev_root);
-            } else {
-                JsonObjectEntry_t* next_to_cur = cur->next;
-                previous->next = next_to_cur;
-                jsonc_free_obj_entry(cur);
-            }
-            return true;
-        }
-    }
-    return false;
+    return olh_map_remove(&obj->olh_map, key);
 }
 
 JsonValue_t* jsonc_obj_get(const JsonObject_t* obj, const char* key)
 {
-    if (!obj || !key || !obj->entry)
+    if (!obj || !key)
         return NULL;
-
-    JsonObjectEntry_t* current = obj->entry;
-    while (current) {
-        if (strcmp(current->key, key) == 0) {
-            return current->value;
-        }
-        current = current->next;
-    }
-    return NULL;
+    return (JsonValue_t*)olh_map_get(&obj->olh_map, key);
 }
 
 const char* jsonc_obj_get_string(const JsonObject_t* obj, const char* key)
@@ -402,7 +327,7 @@ static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t*
 
 void builder_serialize_obj(StringBuilder_t* builder, const JsonObject_t* obj, size_t spaces_per_indent, size_t indent_level)
 {
-    JsonObjectEntry_t* current = obj->entry;
+    BucketEntry_t* current = obj->olh_map.head;
     builder_append_ch(builder, '{');
     if (spaces_per_indent != 0)
         builder_append_ch(builder, '\n');
@@ -542,7 +467,7 @@ bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
 
         while (peek_index != parser->pos) {
             char ch = parser_consume(parser);
-            if(ch == '\t' || ch == '\n')
+            if (ch == '\t' || ch == '\n')
                 return false;
             builder_append_ch(builder, ch);
         }
