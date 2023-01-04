@@ -1,11 +1,11 @@
 #include <ctype.h>
 #include <jsonc.h>
+#include <olh_map.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string_builder.h>
-#include <olh_map.h>
 
 #ifndef JSONC_INIT_ARR_CAPACITY
 #    define JSONC_INIT_ARR_CAPACITY 4
@@ -410,7 +410,9 @@ char* jsonc_doc_to_string(const JsonDocument_t* doc, size_t spaces_per_indent)
  * Parsing
  */
 
-bool parser_eof(const JsonParser_t* parser) { return parser->pos >= parser->len; }
+static inline bool parser_eof(const JsonParser_t* parser) { return parser->pos >= parser->len; }
+
+static inline size_t parser_remaining(const JsonParser_t* parser) { return parser->len - parser->pos; }
 
 void parser_ignore(JsonParser_t* parser, size_t count)
 {
@@ -437,7 +439,7 @@ char parser_peek(JsonParser_t* parser, size_t off)
 
 bool parser_next_is(JsonParser_t* parser, char ch)
 {
-    return parser_peek(parser, 1) == ch;
+    return parser_peek(parser, 0) == ch;
 }
 
 bool parser_consume_specific(JsonParser_t* parser, const char* str)
@@ -462,6 +464,30 @@ void ignore_while(JsonParser_t* parser, CharPredicate pred)
 bool is_space(char ch)
 {
     return ch == '\t' || ch == '\n' || ch == '\r' || ch == ' ';
+}
+
+static inline bool parse_hex(const char* str, size_t len)
+{
+    uint32_t value = 0;
+    for (size_t i = 0; i < len; i++) {
+        char digit = str[i];
+        uint8_t digit_val;
+        if (value > (UINT32_MAX >> 4))
+            return false;
+
+        if (digit >= '0' && digit <= '9') {
+            digit_val = (uint8_t)(digit - '0');
+        } else if (digit >= 'a' && digit <= 'f') {
+            digit_val = 10 + (uint8_t)(digit - 'a');
+        } else if (digit >= 'A' && digit <= 'F') {
+            digit_val = 10 + (uint8_t)(digit - 'A');
+        } else {
+            return false;
+        }
+
+        value = (value << 4) + digit_val;
+    }
+    return true;
 }
 
 bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
@@ -543,6 +569,22 @@ bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
             parser_ignore(parser, 1);
             builder_append_ch(builder, '\f');
             continue;
+        }
+
+        if (parser_next_is(parser, 'u')) {
+            parser_ignore(parser, 1);
+
+            if (parser_remaining(parser) < 4)
+                return false;
+
+            if (parse_hex(&parser->text[parser->pos], 4)) {
+                builder_append_ch(builder, parser_consume(parser));
+                builder_append_ch(builder, parser_consume(parser));
+                builder_append_ch(builder, parser_consume(parser));
+                builder_append_ch(builder, parser_consume(parser));
+                continue;
+            }
+            return false;
         }
 
         return false;
