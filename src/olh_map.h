@@ -17,7 +17,7 @@ typedef struct BucketEntry_t {
     struct BucketEntry_t* next;
 } BucketEntry_t;
 
-typedef void (*olc_value_free)(void*);
+typedef void (*olh_map_value_free)(void*);
 
 typedef struct {
     size_t capacity;
@@ -26,7 +26,7 @@ typedef struct {
     BucketEntry_t* buckets;
     BucketEntry_t* head;
     BucketEntry_t* tail;
-    olc_value_free value_free_func;
+    olh_map_value_free value_free_func;
 } OrderedLinkedHashMap_t;
 
 bool olh_map_rehash(OrderedLinkedHashMap_t* map, size_t capacity);

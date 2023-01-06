@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ctype.h>
 #include <jsonc.h>
 #include <olh_map.h>
@@ -51,7 +52,7 @@ JsonObject_t* jsonc_new_obj()
     JsonObject_t* obj = (JsonObject_t*)calloc(1, sizeof(JsonObject_t));
     if (!obj)
         return NULL;
-    obj->olh_map.value_free_func = (olc_value_free)jsonc_free_value;
+    obj->olh_map.value_free_func = (olh_map_value_free)jsonc_free_value;
     if (!olh_map_rehash(&obj->olh_map, JSONC_INIT_OBJ_CAPACITY)) {
         free(obj);
         return NULL;
@@ -181,6 +182,10 @@ bool jsonc_doc_is_obj(const JsonDocument_t* doc)
     return doc->object != NULL;
 }
 
+JsonObject_t* jsonc_doc_get_obj(JsonDocument_t* doc) {
+    return doc->object;
+}
+
 bool jsonc_doc_set_arr(JsonDocument_t* doc, JsonArray_t* arr)
 {
     if (!doc || !arr)
@@ -196,6 +201,10 @@ bool jsonc_doc_set_arr(JsonDocument_t* doc, JsonArray_t* arr)
 bool jsonc_doc_is_arr(const JsonDocument_t* doc)
 {
     return doc->array != NULL;
+}
+
+JsonArray_t* jsonc_doc_get_arr(JsonDocument_t* doc){
+    return doc->array;
 }
 
 bool jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data)
@@ -302,6 +311,48 @@ JsonArray_t* jsonc_obj_get_arr(const JsonObject_t* obj, const char* key)
     if (!value || value->ty != JSONC_ARRAY)
         return NULL;
     return value->array;
+}
+
+JsonObjectIter_t jsonc_obj_iter(const JsonObject_t* obj)
+{
+    assert(obj);
+    JsonObjectIter_t iter = { .opaque = obj->olh_map.head };
+    return iter;
+}
+
+bool jsonc_obj_iter_next(JsonObjectIter_t* iter)
+{
+    if (!iter || !iter->opaque)
+        return false;
+    iter->opaque = ((BucketEntry_t*)iter->opaque)->next;
+    return true;
+}
+
+const char* jsonc_obj_iter_key(const JsonObjectIter_t* iter)
+{
+    if (!iter || !iter->opaque)
+        return NULL;
+    return ((BucketEntry_t*)iter->opaque)->key;
+}
+
+JsonValue_t* jsonc_obj_iter_value(const JsonObjectIter_t* iter)
+{
+    if (!iter || !iter->opaque)
+        return NULL;
+    return ((BucketEntry_t*)iter->opaque)->value;
+}
+
+JsonArrayIter_t jsonc_arr_iter(const JsonArray_t* arr){
+    assert(arr);
+    JsonArrayIter_t iter = {.it = arr->data};
+    return iter;
+}
+
+bool jsonc_arr_iter_next(JsonArrayIter_t* iter){
+    if(!iter || !iter->it)
+        return false;
+    iter->it++;
+    return iter->it != NULL;
 }
 
 /*

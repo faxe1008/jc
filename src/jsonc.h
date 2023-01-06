@@ -28,6 +28,14 @@ typedef struct {
     JsonValueType_t ty;
 } JsonValue_t;
 
+typedef struct {
+    void* opaque;
+} JsonObjectIter_t;
+
+typedef struct {
+    JsonValue_t** it;
+} JsonArrayIter_t;
+
 JsonDocument_t* jsonc_new_doc();
 JsonObject_t* jsonc_new_obj();
 JsonArray_t* jsonc_new_arr();
@@ -41,8 +49,11 @@ void jsonc_free_value(JsonValue_t* value);
 
 bool jsonc_doc_set_obj(JsonDocument_t* doc, JsonObject_t* obj);
 bool jsonc_doc_is_obj(const JsonDocument_t* doc);
+JsonObject_t* jsonc_doc_get_obj(JsonDocument_t* doc);
+
 bool jsonc_doc_set_arr(JsonDocument_t* doc, JsonArray_t* obj);
 bool jsonc_doc_is_arr(const JsonDocument_t* doc);
+JsonArray_t* jsonc_doc_get_arr(JsonDocument_t* doc);
 
 bool jsonc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value);
 bool jsonc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data);
@@ -60,5 +71,20 @@ JsonArray_t* jsonc_obj_get_arr(const JsonObject_t* obj, const char* key);
 
 char* jsonc_doc_to_string(const JsonDocument_t* doc, size_t spaces_per_indent);
 JsonDocument_t* jsonc_doc_from_string(const char* str);
+
+JsonObjectIter_t jsonc_obj_iter(const JsonObject_t* obj);
+bool jsonc_obj_iter_next(JsonObjectIter_t* iter);
+const char* jsonc_obj_iter_key(const JsonObjectIter_t* iter);
+JsonValue_t* jsonc_obj_iter_value(const JsonObjectIter_t* iter);
+
+JsonArrayIter_t jsonc_arr_iter(const JsonArray_t* arr);
+bool jsonc_arr_iter_next(JsonArrayIter_t* iter);
+
+#define jsonc_obj_foreach(obj, key, value)                 \
+    JsonObjectIter_t iter##obj = jsonc_obj_iter(obj);      \
+    const char* key = jsonc_obj_iter_key(&iter##obj);      \
+    JsonValue_t* value = jsonc_obj_iter_value(&iter##obj); \
+    for (; jsonc_obj_iter_next(&iter##obj);                \
+         key = jsonc_obj_iter_key(&iter##obj), value = jsonc_obj_iter_value(&iter##obj))
 
 #endif
