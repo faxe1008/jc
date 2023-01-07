@@ -9,11 +9,11 @@
 #include <string_builder.h>
 
 #ifndef JC_INIT_ARR_CAPACITY
-#    define JC_INIT_ARR_CAPACITY 4
+#    define JC_INIT_ARR_CAPACITY 32
 #endif
 
 #ifndef JC_INIT_OBJ_CAPACITY
-#    define JC_INIT_OBJ_CAPACITY 4
+#    define JC_INIT_OBJ_CAPACITY 16
 #endif
 
 struct JsonArray_t {
@@ -228,11 +228,9 @@ bool jc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value)
     if (!arr || !value)
         return false;
     if (arr->size + 1 >= arr->capacity) {
-        JsonValue_t** new_buffer = (JsonValue_t**)calloc(1, arr->capacity * 2 * sizeof(JsonValue_t*));
+        JsonValue_t** new_buffer = (JsonValue_t**)realloc(arr->data, arr->capacity * 2 * sizeof(JsonValue_t*));
         if (!new_buffer)
             return false;
-        memcpy(new_buffer, arr->data, arr->size * sizeof(JsonArray_t*));
-        free(arr->data);
         arr->data = new_buffer;
         arr->capacity = arr->capacity * 2;
     }
