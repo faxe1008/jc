@@ -32,10 +32,6 @@ typedef struct {
     void* opaque;
 } JsonObjectIter_t;
 
-typedef struct {
-    JsonValue_t** it;
-} JsonArrayIter_t;
-
 JsonDocument_t* jc_new_doc();
 JsonObject_t* jc_new_obj();
 JsonArray_t* jc_new_arr();
@@ -57,6 +53,8 @@ JsonArray_t* jc_doc_get_arr(JsonDocument_t* doc);
 
 bool jc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value);
 bool jc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data);
+size_t jc_arr_size(JsonArray_t* arr);
+JsonValue_t* jc_arr_at(JsonArray_t* arr, size_t index);
 
 bool jc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value);
 bool jc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data);
@@ -77,14 +75,16 @@ bool jc_obj_iter_next(JsonObjectIter_t* iter);
 const char* jc_obj_iter_key(const JsonObjectIter_t* iter);
 JsonValue_t* jc_obj_iter_value(const JsonObjectIter_t* iter);
 
-JsonArrayIter_t jc_arr_iter(const JsonArray_t* arr);
-bool jc_arr_iter_next(JsonArrayIter_t* iter);
-
 #define jc_obj_foreach(obj, key, value)                 \
     JsonObjectIter_t iter##obj = jc_obj_iter(obj);      \
     const char* key = jc_obj_iter_key(&iter##obj);      \
     JsonValue_t* value = jc_obj_iter_value(&iter##obj); \
     for (; jc_obj_iter_next(&iter##obj);                \
          key = jc_obj_iter_key(&iter##obj), value = jc_obj_iter_value(&iter##obj))
+
+#define jc_arr_foreach(arr, value)          \
+    size_t len##arr = jc_arr_size(arr);     \
+    JsonValue_t* value = jc_arr_at(arr, 0); \
+    for (size_t loopv##arr = 0; loopv##arr < len##arr; loopv##arr++, value = jc_arr_at(arr, loopv##arr))
 
 #endif

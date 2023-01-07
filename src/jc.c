@@ -182,7 +182,8 @@ bool jc_doc_is_obj(const JsonDocument_t* doc)
     return doc->object != NULL;
 }
 
-JsonObject_t* jc_doc_get_obj(JsonDocument_t* doc) {
+JsonObject_t* jc_doc_get_obj(JsonDocument_t* doc)
+{
     return doc->object;
 }
 
@@ -203,7 +204,8 @@ bool jc_doc_is_arr(const JsonDocument_t* doc)
     return doc->array != NULL;
 }
 
-JsonArray_t* jc_doc_get_arr(JsonDocument_t* doc){
+JsonArray_t* jc_doc_get_arr(JsonDocument_t* doc)
+{
     return doc->array;
 }
 
@@ -237,6 +239,20 @@ bool jc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value)
     arr->data[arr->size] = value;
     arr->size++;
     return true;
+}
+
+size_t jc_arr_size(JsonArray_t* arr)
+{
+    assert(arr);
+    return arr->size;
+}
+
+JsonValue_t* jc_arr_at(JsonArray_t* arr, size_t index)
+{
+    assert(arr);
+    if (index >= arr->size)
+        return NULL;
+    return arr->data[index];
 }
 
 bool jc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value)
@@ -340,19 +356,6 @@ JsonValue_t* jc_obj_iter_value(const JsonObjectIter_t* iter)
     if (!iter || !iter->opaque)
         return NULL;
     return ((BucketEntry_t*)iter->opaque)->value;
-}
-
-JsonArrayIter_t jc_arr_iter(const JsonArray_t* arr){
-    assert(arr);
-    JsonArrayIter_t iter = {.it = arr->data};
-    return iter;
-}
-
-bool jc_arr_iter_next(JsonArrayIter_t* iter){
-    if(!iter || !iter->it)
-        return false;
-    iter->it++;
-    return iter->it != NULL;
 }
 
 /*
