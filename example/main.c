@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <jsonc.h>
+#include <jc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,21 +33,21 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    JsonDocument_t* doc = jsonc_doc_from_string(builder.buffer);
+    JsonDocument_t* doc = jc_doc_from_string(builder.buffer);
     if (!doc) {
         printf("Error parsing document\n");
         return 1;
     }
 
-    char* prettified = jsonc_doc_to_string(doc, 4);
+    char* prettified = jc_doc_to_string(doc, 4);
     if (!prettified) {
         printf("Error pretty printing document\n");
-        jsonc_free_doc(doc);
+        jc_free_doc(doc);
         return 1;
     }
 
     printf("%s\n", prettified);
-    jsonc_free_doc(doc);
+    jc_free_doc(doc);
     free(builder.buffer);
     free(prettified);
 }

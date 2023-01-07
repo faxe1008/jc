@@ -1,5 +1,5 @@
-#ifndef JSONC_STRING_BUILDER__
-#define JSONC_STRING_BUILDER__
+#ifndef JC_STRING_BUILDER__
+#define JC_STRING_BUILDER__
 
 #include <stdbool.h>
 #include <stddef.h>

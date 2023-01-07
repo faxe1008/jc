@@ -1,5 +1,5 @@
-#ifndef JSONC_OLH_MAP__
-#define JSONC_OLH_MAP__
+#ifndef JC_OLH_MAP__
+#define JC_OLH_MAP__
 
 #include <stdbool.h>
 #include <stddef.h>

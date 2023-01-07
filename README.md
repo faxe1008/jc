@@ -1,4 +1,4 @@
-# jsonc
+# jc
 
 Simple robust json serialization/deserialization library.
 
@@ -8,20 +8,21 @@ This example demonstrates the manual construction, serialization and deserializa
 JSON document:
 
 ``` c
-JsonObject_t* obj = jsonc_new_obj();
-jsonc_obj_insert(obj, "key", JSONC_STRING, "value");
+JsonObject_t* obj = jc_new_obj();
+jc_obj_insert(obj, "key", JC_STRING, "value");
 
-JsonDocument_t* doc = jsonc_new_doc();
-jsonc_doc_set_obj(doc, obj);
+JsonDocument_t* doc = jc_new_doc();
+jc_doc_set_obj(doc, obj);
 
 // Indent with 4 spaces, if compact serialization is desired set to 0
-char* serialized = jsonc_doc_to_string(doc, 4);
+char* serialized = jc_doc_to_string(doc, 4);
 
-JsonDocument_t* deserialized_doc = jsonc_doc_from_string(serialized);
-printf("Value of 'key' is: '%s'\n", jsonc_obj_get_string(doc->object, "key"));
+JsonDocument_t* deserialized_doc = jc_doc_from_string(serialized);
+JsonObject_t* root_obj = jc_doc_get_ob(deserialized_doc);
+printf("Value of 'key' is: '%s'\n", jc_obj_get_string(root_obj, "key"));
 
-jsonc_free_doc(doc);
-jsonc_free_doc(deserialized_doc);
+jc_free_doc(doc);
+jc_free_doc(deserialized_doc);
 free(serialized);
 ```
 
@@ -32,4 +33,3 @@ pretty prints it.
 
 jsonc is inteded to be used in applications where dynamic memory management is possible.
 The implementation is kept as simple as possible while providing efficiency to work on large JSON documents.
-It currently does not support unicode characters properly.
