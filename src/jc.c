@@ -667,7 +667,7 @@ bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
     return true;
 }
 
-JsonValue_t* parse_string(JsonParser_t* parser)
+static inline JsonValue_t* parse_string(JsonParser_t* parser)
 {
     StringBuilder_t builder = { 0 };
     if (!builder_resize(&builder, 64))
@@ -681,21 +681,21 @@ JsonValue_t* parse_string(JsonParser_t* parser)
     return value;
 }
 
-JsonValue_t* parse_true(JsonParser_t* parser)
+static inline JsonValue_t* parse_true(JsonParser_t* parser)
 {
     if (!parser_consume_specific(parser, "true"))
         return NULL;
     return jc_new_value_bool(true);
 }
 
-JsonValue_t* parse_false(JsonParser_t* parser)
+static inline JsonValue_t* parse_false(JsonParser_t* parser)
 {
     if (!parser_consume_specific(parser, "false"))
         return NULL;
     return jc_new_value_bool(false);
 }
 
-JsonValue_t* parse_null(JsonParser_t* parser)
+static inline JsonValue_t* parse_null(JsonParser_t* parser)
 {
     if (!parser_consume_specific(parser, "null"))
         return NULL;
