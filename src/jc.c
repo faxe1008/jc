@@ -89,8 +89,11 @@ JsonValue_t* jc_new_value(JsonValueType_t ty, void* data)
         if (!value->string)
             return NULL;
         break;
-    case JC_NUMBER:
-        value->number = *(const double*)data;
+    case JC_DOUBLE:
+        value->num_double = *(const double*)data;
+        break;
+    case JC_INT64:
+        value->num_int64 = *(const int64_t*)data;
         break;
     case JC_OBJECT:
         value->object = data;
@@ -325,12 +328,41 @@ bool* jc_obj_get_bool(const JsonObject_t* obj, const char* key)
     return &value->boolean;
 }
 
-double* jc_obj_get_number(const JsonObject_t* obj, const char* key)
+bool jc_obj_get_double(const JsonObject_t* obj, const char* key, double* dbl)
 {
     JsonValue_t* value = jc_obj_get(obj, key);
-    if (!value || value->ty != JC_NUMBER)
-        return NULL;
-    return &value->number;
+    if (!value)
+        return false;
+
+    switch (value->ty) {
+    case JC_DOUBLE:
+        *dbl = value->num_double;
+        break;
+    case JC_INT64:
+        *dbl = (double)value->num_int64;
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+
+bool jc_obj_get_int64(const JsonObject_t* obj, const char* key, int64_t* i64) {
+    JsonValue_t* value = jc_obj_get(obj, key);
+    if (!value)
+        return false;
+
+    switch (value->ty) {
+    case JC_DOUBLE:
+        *i64 = (int64_t)value->num_double;
+        break;
+    case JC_INT64:
+        *i64 = value->num_int64;
+        break;
+    default:
+        return false;
+    }
+    return true;
 }
 
 JsonObject_t* jc_obj_get_obj(const JsonObject_t* obj, const char* key)
@@ -397,8 +429,11 @@ static void builder_serialize_value(StringBuilder_t* builder, const JsonValue_t*
         builder_append_escaped_str(builder, value->string);
         builder_append_ch(builder, '"');
         break;
-    case JC_NUMBER:
-        builder_append(builder, "%g", value->number);
+    case JC_DOUBLE:
+        builder_append(builder, "%g", value->num_double);
+        break;
+    case JC_INT64:
+        builder_append(builder, "%ld", value->num_int64);
         break;
     case JC_OBJECT:
         builder_serialize_obj(builder, value->object, spaces_per_indent, indent_level);
@@ -738,10 +773,12 @@ JsonValue_t* parse_number(JsonParser_t* parser)
         goto EXIT_ERROR;
     }
 
+    bool parse_as_double = false;
     // [frac] [exp]
     ch = parser_peek(parser, 0);
     if (ch == '.') {
         // [ frac ]
+        parse_as_double = true;
         builder_append_ch(&builder, parser_consume(parser));
         ch = parser_peek(parser, 0);
         if (!isdigit(ch))
@@ -754,6 +791,7 @@ JsonValue_t* parse_number(JsonParser_t* parser)
 
     if (ch == 'e' || ch == 'E') {
         // [ exp ]
+        parse_as_double = true;
         builder_append_ch(&builder, parser_consume(parser));
         ch = parser_peek(parser, 0);
         if (ch == '+' || ch == '-') {
@@ -770,9 +808,22 @@ JsonValue_t* parse_number(JsonParser_t* parser)
             builder_append_ch(&builder, parser_consume(parser));
     }
 
-    double value = atof(builder.buffer);
+    JsonValue_t* result = NULL;
+    if (parse_as_double) {
+        char* end_ptr = NULL;
+        double value = strtod(builder.buffer, &end_ptr);
+        if(end_ptr != builder.buffer + builder.pos)
+            goto EXIT_ERROR;
+        result = jc_new_value(JC_DOUBLE, &value);
+    } else {
+        char* end_ptr = NULL;
+        int64_t value = strtoll(builder.buffer, &end_ptr, 10);
+        if(end_ptr != builder.buffer + builder.pos)
+            goto EXIT_ERROR;
+        result = jc_new_value(JC_INT64, &value);
+    }
     free(builder.buffer);
-    return jc_new_value(JC_NUMBER, &value);
+    return result;
 EXIT_ERROR:
     free(builder.buffer);
     return NULL;

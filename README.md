@@ -33,3 +33,5 @@ pretty prints it.
 
 jsonc is inteded to be used in applications where dynamic memory management is possible.
 The implementation is kept as simple as possible while providing efficiency to work on large JSON documents.
+
+*NOTE: The library does not check for overflow when parsing integer values.*

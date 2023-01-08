@@ -70,7 +70,7 @@ TEST_CASE(serialize_complex, {
     double num = 2.0;
     JsonArray_t* arr = jc_new_arr();
     jc_arr_insert_value(arr, jc_new_value(JC_STRING, "Item1"));
-    jc_arr_insert_value(arr, jc_new_value(JC_NUMBER, &num));
+    jc_arr_insert_value(arr, jc_new_value(JC_DOUBLE, &num));
     jc_obj_set(obj, "array", jc_new_value(JC_ARRAY, arr));
 
     JsonObject_t* sub = jc_new_obj();
@@ -134,11 +134,11 @@ TEST_CASE(remove_obj, {
 TEST_CASE(remove_arr, {
     JsonArray_t* arr = jc_new_arr();
     for(double i = 0; i < 5; i++)
-        jc_arr_insert(arr, JC_NUMBER, &i);
+        jc_arr_insert(arr, JC_DOUBLE, &i);
 
     jc_arr_remove(arr, 1, 2);
-    VERIFY(jc_arr_at(arr, 1)->number == 3.0);
-    VERIFY(jc_arr_at(arr, 2)->number == 4.0);
+    VERIFY(jc_arr_at(arr, 1)->num_double == 3.0);
+    VERIFY(jc_arr_at(arr, 2)->num_double == 4.0);
     VERIFY(jc_arr_size(arr) == 3);
 })
 

@@ -10,7 +10,8 @@ typedef struct JsonDocument_t JsonDocument_t;
 
 typedef enum {
     JC_STRING,
-    JC_NUMBER,
+    JC_DOUBLE,
+    JC_INT64,
     JC_OBJECT,
     JC_ARRAY,
     JC_BOOLEAN,
@@ -20,7 +21,8 @@ typedef enum {
 typedef struct {
     union {
         char* string;
-        double number;
+        double num_double;
+        int64_t num_int64;
         bool boolean;
         JsonObject_t* object;
         JsonArray_t* array;
@@ -65,7 +67,8 @@ size_t jc_obj_size(const JsonObject_t* obj);
 JsonValue_t* jc_obj_get(const JsonObject_t* obj, const char* key);
 const char* jc_obj_get_string(const JsonObject_t* obj, const char* key);
 bool* jc_obj_get_bool(const JsonObject_t* obj, const char* key);
-double* jc_obj_get_number(const JsonObject_t* obj, const char* key);
+bool jc_obj_get_double(const JsonObject_t* obj, const char* key, double* dbl);
+bool jc_obj_get_int64(const JsonObject_t* obj, const char* key, int64_t* i64);
 JsonObject_t* jc_obj_get_obj(const JsonObject_t* obj, const char* key);
 JsonArray_t* jc_obj_get_arr(const JsonObject_t* obj, const char* key);
 
