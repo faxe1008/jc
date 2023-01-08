@@ -100,7 +100,11 @@ void builder_append_escaped_str(StringBuilder_t* builder, const char* str)
             builder_append(builder, "\\\\");
             break;
         default:
-            builder_append_ch(builder, ch);
+            // Non printable characters
+            if (ch >= 0 && ch < 31)
+                builder_append(builder, "\\u%04x", ch);
+            else
+                builder_append_ch(builder, ch);
         }
     }
 }
