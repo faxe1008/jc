@@ -131,6 +131,17 @@ TEST_CASE(remove_obj, {
     jc_free_doc(doc);
 });
 
+TEST_CASE(remove_arr, {
+    JsonArray_t* arr = jc_new_arr();
+    for(double i = 0; i < 5; i++)
+        jc_arr_insert(arr, JC_NUMBER, &i);
+
+    jc_arr_remove(arr, 1, 2);
+    VERIFY(jc_arr_at(arr, 1)->number == 3.0);
+    VERIFY(jc_arr_at(arr, 2)->number == 4.0);
+    VERIFY(jc_arr_size(arr) == 3);
+})
+
 int main(int argc, char** argv)
 {
     REGISTER_TEST_CASE(set_and_get);
@@ -141,5 +152,6 @@ int main(int argc, char** argv)
     REGISTER_TEST_CASE(serde_valid);
     REGISTER_TEST_CASE(serde_invalid);
     REGISTER_TEST_CASE(remove_obj);
+    REGISTER_TEST_CASE(remove_arr);
     RUN_TEST_SUITE(argc, argv);
 }

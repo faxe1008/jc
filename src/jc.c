@@ -253,6 +253,22 @@ JsonValue_t* jc_arr_at(JsonArray_t* arr, size_t index)
     return arr->data[index];
 }
 
+bool jc_arr_remove(JsonArray_t* arr, size_t index, size_t count)
+{
+    assert(arr);
+    size_t end = index + count;
+    if (index >= arr->size || end >= arr->size)
+        return false;
+
+    for (size_t i = index; i < end; i++) {
+        if (arr->data[i])
+            jc_free_value(arr->data[i]);
+    }
+    memmove(&arr->data[index], &arr->data[end], (arr->size - count) * sizeof(JsonValue_t*));
+    arr->size -= count;
+    return true;
+}
+
 bool jc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value)
 {
     if (!obj || !key || !value)

@@ -55,6 +55,7 @@ bool jc_arr_insert_value(JsonArray_t* arr, JsonValue_t* value);
 bool jc_arr_insert(JsonArray_t* arr, JsonValueType_t ty, void* data);
 size_t jc_arr_size(JsonArray_t* arr);
 JsonValue_t* jc_arr_at(JsonArray_t* arr, size_t index);
+bool jc_arr_remove(JsonArray_t* arr, size_t index, size_t count);
 
 bool jc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value);
 bool jc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data);
