@@ -17,5 +17,6 @@ bool builder_append_ch(StringBuilder_t* builder, char ch);
 bool builder_append_chrs(StringBuilder_t* builder, char ch, size_t count);
 bool builder_append(StringBuilder_t* builder, const char* format, ...);
 void builder_append_escaped_str(StringBuilder_t* builder, const char* str);
+bool builder_append_unicode(StringBuilder_t* builder, uint32_t code_point);
 
 #endif

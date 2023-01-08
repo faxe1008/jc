@@ -108,3 +108,27 @@ void builder_append_escaped_str(StringBuilder_t* builder, const char* str)
         }
     }
 }
+
+bool builder_append_unicode(StringBuilder_t* builder, uint32_t code_point)
+{
+     if (code_point <= 0x7f) {
+        builder_append_ch(builder, (char)code_point);
+        return true;
+    } else if (code_point <= 0x07ff) {
+        builder_append_ch(builder, (char)(((code_point >> 6) & 0x1f) | 0xc0));
+        builder_append_ch(builder, (char)(((code_point >> 0) & 0x3f) | 0x80));
+        return true;
+    } else if (code_point <= 0xffff) {
+        builder_append_ch(builder, (char)(((code_point >> 12) & 0x0f) | 0xe0));
+        builder_append_ch(builder, (char)(((code_point >> 6) & 0x3f) | 0x80));
+        builder_append_ch(builder, (char)(((code_point >> 0) & 0x3f) | 0x80));
+        return true;
+    } else if (code_point <= 0x10ffff) {
+        builder_append_ch(builder, (char)(((code_point >> 18) & 0x07) | 0xf0));
+        builder_append_ch(builder, (char)(((code_point >> 12) & 0x3f) | 0x80));
+        builder_append_ch(builder, (char)(((code_point >> 6) & 0x3f) | 0x80));
+        builder_append_ch(builder, (char)(((code_point >> 0) & 0x3f) | 0x80));
+        return true;
+    }
+    return false;
+}

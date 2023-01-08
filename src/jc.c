@@ -120,7 +120,8 @@ JsonValue_t* jc_new_bool_value(bool b)
     return value;
 }
 
-JsonValue_t* jc_new_double_value(double dbl){
+JsonValue_t* jc_new_double_value(double dbl)
+{
     JsonValue_t* value = (JsonValue_t*)calloc(1, sizeof(JsonValue_t));
     if (!value)
         return NULL;
@@ -129,7 +130,8 @@ JsonValue_t* jc_new_double_value(double dbl){
     return value;
 }
 
-JsonValue_t* jc_new_int64_value(int64_t i64){
+JsonValue_t* jc_new_int64_value(int64_t i64)
+{
     JsonValue_t* value = (JsonValue_t*)calloc(1, sizeof(JsonValue_t));
     if (!value)
         return NULL;
@@ -365,7 +367,8 @@ bool jc_obj_get_double(const JsonObject_t* obj, const char* key, double* dbl)
     return true;
 }
 
-bool jc_obj_get_int64(const JsonObject_t* obj, const char* key, int64_t* i64) {
+bool jc_obj_get_int64(const JsonObject_t* obj, const char* key, int64_t* i64)
+{
     JsonValue_t* value = jc_obj_get(obj, key);
     if (!value)
         return false;
@@ -590,13 +593,12 @@ static inline void ignore_whitespace(JsonParser_t* parser)
     }
 }
 
-static inline bool parse_hex(const char* str, size_t len)
+static inline bool parse_hex(const char* str, size_t len, uint32_t* value)
 {
-    uint32_t value = 0;
     for (size_t i = 0; i < len; i++) {
         char digit = str[i];
         uint8_t digit_val;
-        if (value > (UINT32_MAX >> 4))
+        if (*value > (UINT32_MAX >> 4))
             return false;
 
         if (digit >= '0' && digit <= '9') {
@@ -609,9 +611,25 @@ static inline bool parse_hex(const char* str, size_t len)
             return false;
         }
 
-        value = (value << 4) + digit_val;
+        *value = (*value << 4) + digit_val;
     }
     return true;
+}
+
+static inline bool parse_unicode_symbol(JsonParser_t* parser, StringBuilder_t* builder)
+{
+    if (!parser_consume_specific(parser, "u"))
+        return false;
+    if (parser_remaining(parser) < 4)
+        return false;
+
+    uint32_t code_point = 0;
+    if (parse_hex(&parser->text[parser->pos], 4, &code_point)) {
+        builder_append_unicode(builder, code_point);
+        parser_ignore(parser, 4);
+        return true;
+    }
+    return false;
 }
 
 bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
@@ -695,20 +713,8 @@ bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
             continue;
         }
 
-        if (parser_next_is(parser, 'u')) {
-            parser_ignore(parser, 1);
-
-            if (parser_remaining(parser) < 4)
-                return false;
-
-            if (parse_hex(&parser->text[parser->pos], 4)) {
-                builder_append_ch(builder, parser_consume(parser));
-                builder_append_ch(builder, parser_consume(parser));
-                builder_append_ch(builder, parser_consume(parser));
-                builder_append_ch(builder, parser_consume(parser));
-                continue;
-            }
-            return false;
+        if (parse_unicode_symbol(parser, builder)) {
+            continue;
         }
 
         return false;
@@ -830,13 +836,13 @@ JsonValue_t* parse_number(JsonParser_t* parser)
     if (parse_as_double) {
         char* end_ptr = NULL;
         double value = strtod(builder.buffer, &end_ptr);
-        if(end_ptr != builder.buffer + builder.pos)
+        if (end_ptr != builder.buffer + builder.pos)
             goto EXIT_ERROR;
         result = jc_new_double_value(value);
     } else {
         char* end_ptr = NULL;
         int64_t value = strtoll(builder.buffer, &end_ptr, 10);
-        if(end_ptr != builder.buffer + builder.pos)
+        if (end_ptr != builder.buffer + builder.pos)
             goto EXIT_ERROR;
         result = jc_new_int64_value(value);
     }
