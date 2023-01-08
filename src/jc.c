@@ -497,25 +497,22 @@ bool parser_next_is(JsonParser_t* parser, char ch)
 bool parser_consume_specific(JsonParser_t* parser, const char* str)
 {
     size_t len = strlen(str);
-    for (size_t i = 0; i < len; i++) {
-        if (parser_peek(parser, i) != str[i]) {
-            return false;
-        }
-    }
+    if (strncmp(&parser->text[parser->pos], str, len) != 0)
+        return false;
     parser_ignore(parser, len);
     return true;
 }
 
-typedef bool (*CharPredicate)(char);
-void ignore_while(JsonParser_t* parser, CharPredicate pred)
+static inline bool is_space(char ch)
 {
-    while (!parser_eof(parser) && pred(parser_peek(parser, 0))) {
+    return ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r';
+}
+
+static inline void ignore_whitespace(JsonParser_t* parser)
+{
+    while (!parser_eof(parser) && is_space(parser_peek(parser, 0))) {
         parser_ignore(parser, 1);
     }
-}
-bool is_space(char ch)
-{
-    return ch == '\t' || ch == '\n' || ch == '\r' || ch == ' ';
 }
 
 static inline bool parse_hex(const char* str, size_t len)
@@ -761,7 +758,7 @@ EXIT_ERROR:
 
 JsonValue_t* parse_value(JsonParser_t* parser)
 {
-    ignore_while(parser, is_space);
+    ignore_whitespace(parser);
     char type_hint = parser_peek(parser, 0);
     switch (type_hint) {
     case '{':
@@ -808,18 +805,18 @@ JsonObject_t* parse_obj(JsonParser_t* parser)
         goto EXIT_ERROR;
 
     for (;;) {
-        ignore_while(parser, is_space);
+        ignore_whitespace(parser);
         if (parser_peek(parser, 0) == '}')
             break;
-        ignore_while(parser, is_space);
+        ignore_whitespace(parser);
 
         if (!parse_and_unescape_str(parser, &builder))
             goto EXIT_ERROR;
-        ignore_while(parser, is_space);
+        ignore_whitespace(parser);
 
         if (!parser_consume_specific(parser, ":"))
             goto EXIT_ERROR;
-        ignore_while(parser, is_space);
+        ignore_whitespace(parser);
 
         JsonValue_t* value = parse_value(parser);
         if (!value)
@@ -827,19 +824,19 @@ JsonObject_t* parse_obj(JsonParser_t* parser)
 
         jc_obj_set(obj, builder.buffer, value);
         builder_reset(&builder);
-        ignore_while(parser, is_space);
+        ignore_whitespace(parser);
         if (parser_peek(parser, 0) == '}')
             break;
 
         if (!parser_consume_specific(parser, ","))
             goto EXIT_ERROR;
-        ignore_while(parser, is_space);
+        ignore_whitespace(parser);
 
         if (parser_peek(parser, 0) == '}')
             goto EXIT_ERROR;
     }
 
-    ignore_while(parser, is_space);
+    ignore_whitespace(parser);
     if (!parser_consume_specific(parser, "}"))
         goto EXIT_ERROR;
 
@@ -862,7 +859,7 @@ JsonArray_t* parse_arr(JsonParser_t* parser)
         goto EXIT_ERROR;
 
     for (;;) {
-        ignore_while(parser, is_space);
+        ignore_whitespace(parser);
         if (parser_peek(parser, 0) == ']')
             break;
 
@@ -871,7 +868,7 @@ JsonArray_t* parse_arr(JsonParser_t* parser)
             goto EXIT_ERROR;
         jc_arr_insert_value(arr, value);
         builder_reset(&builder);
-        ignore_while(parser, is_space);
+        ignore_whitespace(parser);
 
         if (parser_peek(parser, 0) == ']')
             break;
@@ -879,13 +876,13 @@ JsonArray_t* parse_arr(JsonParser_t* parser)
         if (!parser_consume_specific(parser, ","))
             goto EXIT_ERROR;
 
-        ignore_while(parser, is_space);
+        ignore_whitespace(parser);
 
         if (parser_peek(parser, 0) == ']')
             goto EXIT_ERROR;
     }
 
-    ignore_while(parser, is_space);
+    ignore_whitespace(parser);
     if (!parser_consume_specific(parser, "]"))
         goto EXIT_ERROR;
 
@@ -902,7 +899,7 @@ JsonDocument_t* parse_doc(JsonParser_t* parser)
 {
     JsonDocument_t* doc = jc_new_doc();
 
-    ignore_while(parser, is_space);
+    ignore_whitespace(parser);
     char type_hint = parser_peek(parser, 0);
     switch (type_hint) {
     case '{': {
@@ -935,7 +932,7 @@ JsonDocument_t* jc_doc_from_string(const char* str)
     if (!doc)
         return NULL;
     // Check if all input was consumed
-    ignore_while(&parser, is_space);
+    ignore_whitespace(&parser);
     if (!parser_eof(&parser)) {
         jc_free_doc(doc);
         return NULL;
