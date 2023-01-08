@@ -273,6 +273,12 @@ bool jc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void*
     return true;
 }
 
+size_t jc_obj_size(const JsonObject_t* obj)
+{
+    assert(obj);
+    return obj->olh_map.size;
+}
+
 bool jc_obj_remove(JsonObject_t* obj, const char* key)
 {
     if (!obj || !key)

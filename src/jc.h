@@ -59,6 +59,7 @@ JsonValue_t* jc_arr_at(JsonArray_t* arr, size_t index);
 bool jc_obj_set(JsonObject_t* obj, const char* key, JsonValue_t* value);
 bool jc_obj_insert(JsonObject_t* obj, const char* key, JsonValueType_t ty, void* data);
 bool jc_obj_remove(JsonObject_t* obj, const char* key);
+size_t jc_obj_size(const JsonObject_t* obj);
 
 JsonValue_t* jc_obj_get(const JsonObject_t* obj, const char* key);
 const char* jc_obj_get_string(const JsonObject_t* obj, const char* key);
