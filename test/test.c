@@ -46,7 +46,7 @@ TEST_CASE(serialize_arr, {
     JsonArray_t* arr = jc_new_arr();
 
     jc_arr_insert(arr, JC_STRING, "Item1");
-    JsonValue_t* v2 = jc_new_value_bool(true);
+    JsonValue_t* v2 = jc_new_bool_value(true);
     jc_arr_insert_value(arr, v2);
 
     JsonDocument_t* doc = jc_new_doc();
@@ -63,14 +63,13 @@ TEST_CASE(serialize_complex, {
     JsonObject_t* obj = jc_new_obj();
 
     jc_obj_insert(obj, "key", JC_STRING, "value");
-    jc_obj_set(obj, "boolean_true", jc_new_value_bool(true));
-    jc_obj_set(obj, "boolean_false", jc_new_value_bool(false));
+    jc_obj_set(obj, "boolean_true", jc_new_bool_value(true));
+    jc_obj_set(obj, "boolean_false", jc_new_bool_value(false));
     jc_obj_set(obj, "NULL", jc_new_value(JC_NULL_LITERAL, NULL));
 
-    double num = 2.0;
     JsonArray_t* arr = jc_new_arr();
     jc_arr_insert_value(arr, jc_new_value(JC_STRING, "Item1"));
-    jc_arr_insert_value(arr, jc_new_value(JC_DOUBLE, &num));
+    jc_arr_insert_value(arr, jc_new_double_value(2.0));
     jc_obj_set(obj, "array", jc_new_value(JC_ARRAY, arr));
 
     JsonObject_t* sub = jc_new_obj();
@@ -134,7 +133,7 @@ TEST_CASE(remove_obj, {
 TEST_CASE(remove_arr, {
     JsonArray_t* arr = jc_new_arr();
     for(double i = 0; i < 5; i++)
-        jc_arr_insert(arr, JC_DOUBLE, &i);
+        jc_arr_insert_value(arr, jc_new_double_value(i));
 
     jc_arr_remove(arr, 1, 2);
     VERIFY(jc_arr_at(arr, 1)->num_double == 3.0);

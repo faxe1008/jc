@@ -38,7 +38,9 @@ JsonDocument_t* jc_new_doc();
 JsonObject_t* jc_new_obj();
 JsonArray_t* jc_new_arr();
 JsonValue_t* jc_new_value(JsonValueType_t ty, void* data);
-JsonValue_t* jc_new_value_bool(bool);
+JsonValue_t* jc_new_bool_value(bool);
+JsonValue_t* jc_new_double_value(double);
+JsonValue_t* jc_new_int64_value(int64_t);
 
 void jc_free_doc(JsonDocument_t* doc);
 void jc_free_obj(JsonObject_t* obj);

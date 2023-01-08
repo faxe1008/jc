@@ -110,13 +110,31 @@ JsonValue_t* jc_new_value(JsonValueType_t ty, void* data)
     return value;
 }
 
-JsonValue_t* jc_new_value_bool(bool b)
+JsonValue_t* jc_new_bool_value(bool b)
 {
     JsonValue_t* value = (JsonValue_t*)calloc(1, sizeof(JsonValue_t));
     if (!value)
         return NULL;
     value->ty = JC_BOOLEAN;
     value->boolean = b;
+    return value;
+}
+
+JsonValue_t* jc_new_double_value(double dbl){
+    JsonValue_t* value = (JsonValue_t*)calloc(1, sizeof(JsonValue_t));
+    if (!value)
+        return NULL;
+    value->ty = JC_DOUBLE;
+    value->num_double = dbl;
+    return value;
+}
+
+JsonValue_t* jc_new_int64_value(int64_t i64){
+    JsonValue_t* value = (JsonValue_t*)calloc(1, sizeof(JsonValue_t));
+    if (!value)
+        return NULL;
+    value->ty = JC_INT64;
+    value->num_int64 = i64;
     return value;
 }
 
@@ -720,14 +738,14 @@ static inline JsonValue_t* parse_true(JsonParser_t* parser)
 {
     if (!parser_consume_specific(parser, "true"))
         return NULL;
-    return jc_new_value_bool(true);
+    return jc_new_bool_value(true);
 }
 
 static inline JsonValue_t* parse_false(JsonParser_t* parser)
 {
     if (!parser_consume_specific(parser, "false"))
         return NULL;
-    return jc_new_value_bool(false);
+    return jc_new_bool_value(false);
 }
 
 static inline JsonValue_t* parse_null(JsonParser_t* parser)
@@ -814,13 +832,13 @@ JsonValue_t* parse_number(JsonParser_t* parser)
         double value = strtod(builder.buffer, &end_ptr);
         if(end_ptr != builder.buffer + builder.pos)
             goto EXIT_ERROR;
-        result = jc_new_value(JC_DOUBLE, &value);
+        result = jc_new_double_value(value);
     } else {
         char* end_ptr = NULL;
         int64_t value = strtoll(builder.buffer, &end_ptr, 10);
         if(end_ptr != builder.buffer + builder.pos)
             goto EXIT_ERROR;
-        result = jc_new_value(JC_INT64, &value);
+        result = jc_new_int64_value(value);
     }
     free(builder.buffer);
     return result;
