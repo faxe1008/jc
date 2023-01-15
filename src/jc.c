@@ -567,14 +567,8 @@ char parser_peek(JsonParser_t* parser, size_t off)
     return parser->text[parser->pos + off];
 }
 
-bool parser_next_is(JsonParser_t* parser, char ch)
+inline bool parser_consume_specific(JsonParser_t* parser, const char* str, size_t len)
 {
-    return parser_peek(parser, 0) == ch;
-}
-
-bool parser_consume_specific(JsonParser_t* parser, const char* str)
-{
-    size_t len = strlen(str);
     if (strncmp(&parser->text[parser->pos], str, len) != 0)
         return false;
     parser_ignore(parser, len);
@@ -618,7 +612,7 @@ static inline bool parse_hex(const char* str, size_t len, uint32_t* value)
 
 static inline bool parse_unicode_symbol(JsonParser_t* parser, StringBuilder_t* builder)
 {
-    if (!parser_consume_specific(parser, "u"))
+    if (!parser_consume_specific(parser, "u", 1))
         return false;
     if (parser_remaining(parser) < 4)
         return false;
@@ -634,7 +628,7 @@ static inline bool parse_unicode_symbol(JsonParser_t* parser, StringBuilder_t* b
 
 bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
 {
-    if (!parser_consume_specific(parser, "\""))
+    if (!parser_consume_specific(parser, "\"", 1))
         return false;
 
     for (;;) {
@@ -665,62 +659,48 @@ bool parse_and_unescape_str(JsonParser_t* parser, StringBuilder_t* builder)
         }
         parser_ignore(parser, 1);
 
-        if (parser_next_is(parser, '"')) {
+        switch (parser_peek(parser, 0)) {
+        case '"':
             parser_ignore(parser, 1);
             builder_append_ch(builder, '"');
             continue;
-        }
-
-        if (parser_next_is(parser, '\\')) {
+        case '\\':
             parser_ignore(parser, 1);
             builder_append_ch(builder, '\\');
             continue;
-        }
-
-        if (parser_next_is(parser, '/')) {
+        case '/':
             parser_ignore(parser, 1);
             builder_append_ch(builder, '/');
             continue;
-        }
-
-        if (parser_next_is(parser, 'n')) {
+        case 'n':
             parser_ignore(parser, 1);
             builder_append_ch(builder, '\n');
             continue;
-        }
-
-        if (parser_next_is(parser, 'r')) {
+        case 'r':
             parser_ignore(parser, 1);
             builder_append_ch(builder, '\r');
             continue;
-        }
-
-        if (parser_next_is(parser, 't')) {
+        case 't':
             parser_ignore(parser, 1);
             builder_append_ch(builder, '\t');
             continue;
-        }
-
-        if (parser_next_is(parser, 'b')) {
+        case 'b':
             parser_ignore(parser, 1);
             builder_append_ch(builder, '\b');
             continue;
-        }
-
-        if (parser_next_is(parser, 'f')) {
+        case 'f':
             parser_ignore(parser, 1);
             builder_append_ch(builder, '\f');
             continue;
+        case 'u': {
+            if (parse_unicode_symbol(parser, builder))
+                continue;
         }
-
-        if (parse_unicode_symbol(parser, builder)) {
-            continue;
         }
-
         return false;
     }
 
-    if (!parser_consume_specific(parser, "\""))
+    if (!parser_consume_specific(parser, "\"", 1))
         return false;
 
     return true;
@@ -742,21 +722,21 @@ static inline JsonValue_t* parse_string(JsonParser_t* parser)
 
 static inline JsonValue_t* parse_true(JsonParser_t* parser)
 {
-    if (!parser_consume_specific(parser, "true"))
+    if (!parser_consume_specific(parser, "true", 4))
         return NULL;
     return jc_new_bool_value(true);
 }
 
 static inline JsonValue_t* parse_false(JsonParser_t* parser)
 {
-    if (!parser_consume_specific(parser, "false"))
+    if (!parser_consume_specific(parser, "false", 5))
         return NULL;
     return jc_new_bool_value(false);
 }
 
 static inline JsonValue_t* parse_null(JsonParser_t* parser)
 {
-    if (!parser_consume_specific(parser, "null"))
+    if (!parser_consume_specific(parser, "null", 4))
         return NULL;
     return jc_new_value(JC_NULL_LITERAL, NULL);
 }
@@ -898,7 +878,7 @@ JsonObject_t* parse_obj(JsonParser_t* parser)
     StringBuilder_t builder = { 0 };
     builder_resize(&builder, 64);
 
-    if (!parser_consume_specific(parser, "{"))
+    if (!parser_consume_specific(parser, "{", 1))
         goto EXIT_ERROR;
 
     for (;;) {
@@ -911,7 +891,7 @@ JsonObject_t* parse_obj(JsonParser_t* parser)
             goto EXIT_ERROR;
         ignore_whitespace(parser);
 
-        if (!parser_consume_specific(parser, ":"))
+        if (!parser_consume_specific(parser, ":", 1))
             goto EXIT_ERROR;
         ignore_whitespace(parser);
 
@@ -925,7 +905,7 @@ JsonObject_t* parse_obj(JsonParser_t* parser)
         if (parser_peek(parser, 0) == '}')
             break;
 
-        if (!parser_consume_specific(parser, ","))
+        if (!parser_consume_specific(parser, ",", 1))
             goto EXIT_ERROR;
         ignore_whitespace(parser);
 
@@ -934,7 +914,7 @@ JsonObject_t* parse_obj(JsonParser_t* parser)
     }
 
     ignore_whitespace(parser);
-    if (!parser_consume_specific(parser, "}"))
+    if (!parser_consume_specific(parser, "}", 1))
         goto EXIT_ERROR;
 
     free(builder.buffer);
@@ -952,7 +932,7 @@ JsonArray_t* parse_arr(JsonParser_t* parser)
     StringBuilder_t builder = { 0 };
     builder_resize(&builder, 64);
 
-    if (!parser_consume_specific(parser, "["))
+    if (!parser_consume_specific(parser, "[", 1))
         goto EXIT_ERROR;
 
     for (;;) {
@@ -970,7 +950,7 @@ JsonArray_t* parse_arr(JsonParser_t* parser)
         if (parser_peek(parser, 0) == ']')
             break;
 
-        if (!parser_consume_specific(parser, ","))
+        if (!parser_consume_specific(parser, ",", 1))
             goto EXIT_ERROR;
 
         ignore_whitespace(parser);
@@ -980,7 +960,7 @@ JsonArray_t* parse_arr(JsonParser_t* parser)
     }
 
     ignore_whitespace(parser);
-    if (!parser_consume_specific(parser, "]"))
+    if (!parser_consume_specific(parser, "]", 1))
         goto EXIT_ERROR;
 
     free(builder.buffer);
