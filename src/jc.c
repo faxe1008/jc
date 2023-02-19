@@ -567,7 +567,7 @@ char parser_peek(JsonParser_t* parser, size_t off)
     return parser->text[parser->pos + off];
 }
 
-inline bool parser_consume_specific(JsonParser_t* parser, const char* str, size_t len)
+static inline bool parser_consume_specific(JsonParser_t* parser, const char* str, size_t len)
 {
     if (strncmp(&parser->text[parser->pos], str, len) != 0)
         return false;
